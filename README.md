@@ -39,3 +39,11 @@ npm run db:migrate -- --name init
 ```
 
 Use `npm run db:deploy` in deployments. Never use `migrate dev` in production.
+
+## Protecting routes
+
+Roles: USER, SURVEYOR, and ADMIN.
+
+    router.get('/profile', auth(), controller);
+    router.get('/survey-jobs', auth(USER_ROLES.SURVEYOR, USER_ROLES.ADMIN), controller);
+    router.delete('/users/:id', auth(USER_ROLES.ADMIN), controller);
