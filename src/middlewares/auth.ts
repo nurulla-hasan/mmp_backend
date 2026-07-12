@@ -1,7 +1,9 @@
 import type { Request, RequestHandler } from 'express';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { AppError } from '../errors/app-error.js';
-import { USER_ROLES, type UserRole } from '../types/auth.js';
+import { prisma } from '../lib/prisma.js';
+import { USER_ROLES, type AuthUser, type UserRole } from '../types/auth.js';
+import { asyncHandler } from '../utils/async-handler.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 
 const validRoles = new Set<UserRole>(Object.values(USER_ROLES));
@@ -26,26 +28,16 @@ const getAccessToken = (req: Request): string | undefined => {
 };
 
 export const auth = (...allowedRoles: UserRole[]): RequestHandler =>
-  (req, _res, next) => {
+  asyncHandler(async (req, _res, next) => {
     const token = getAccessToken(req);
 
     if (!token) {
       return next(new AppError(401, 'A valid access token is required', 'UNAUTHORIZED'));
     }
 
+    let decoded: AuthUser;
     try {
-      const user = verifyAccessToken(token);
-
-      if (!validRoles.has(user.role)) {
-        return next(new AppError(401, 'Access token contains an invalid role', 'UNAUTHORIZED'));
-      }
-
-      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        return next(new AppError(403, 'You do not have permission to access this resource', 'FORBIDDEN'));
-      }
-
-      req.user = user;
-      return next();
+      decoded = verifyAccessToken(token);
     } catch (error) {
       if (error instanceof TokenExpiredError) {
         return next(new AppError(401, 'Access token has expired', 'TOKEN_EXPIRED'));
@@ -55,4 +47,28 @@ export const auth = (...allowedRoles: UserRole[]): RequestHandler =>
       }
       return next(error);
     }
-  };
+
+    if (!validRoles.has(decoded.role)) {
+      return next(new AppError(401, 'Access token contains an invalid role', 'UNAUTHORIZED'));
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true, activeStatus: true },
+    });
+
+    if (!user) {
+      return next(new AppError(401, 'User not found', 'UNAUTHORIZED'));
+    }
+
+    if (user.activeStatus === 'BLOCKED') {
+      return next(new AppError(403, 'Your account has been blocked!', 'FORBIDDEN'));
+    }
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role as UserRole)) {
+      return next(new AppError(403, 'You do not have permission to access this resource', 'FORBIDDEN'));
+    }
+
+    req.user = { userId: user.id, role: user.role as UserRole };
+    return next();
+  });
