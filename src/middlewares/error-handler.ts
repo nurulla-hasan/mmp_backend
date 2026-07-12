@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
-import { env } from '../config/env.js';
+import { env } from '../config/index.js';
 import { AppError } from '../errors/app-error.js';
 
 export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next) => {

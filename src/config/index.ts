@@ -14,7 +14,6 @@ const envSchema = z.object({
   APP_NAME: z.string().min(1).default('MMP API'),
   DATABASE_URL: z.url().default('postgresql://postgres:postgres@localhost:5432/mmp?schema=public'),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   TRUST_PROXY: booleanString,
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),

@@ -1,42 +1,50 @@
 import { createServer } from 'node:http';
 import { app } from './app.js';
-import { env } from './config/env.js';
-import { logger } from './lib/logger.js';
+import { env } from './config/index.js';
+import { prisma } from './lib/prisma.js';
 
 const server = createServer(app);
 let shuttingDown = false;
 
-server.listen(env.PORT, env.HOST, () => {
-  logger.info({ host: env.HOST, port: env.PORT, environment: env.NODE_ENV }, 'Server started');
-});
+async function main() {
+  try {
+    await prisma.$connect();
+    console.log('Database connected');
 
-const shutdown = (signal: NodeJS.Signals) => {
+    server.listen(env.PORT, env.HOST, () => {
+      console.log(`Server started on ${env.HOST}:${env.PORT} [${env.NODE_ENV}]`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+}
+
+const shutdown = (signal: string) => {
   if (shuttingDown) return;
   shuttingDown = true;
-  logger.info({ signal }, 'Graceful shutdown started');
+  console.log(`Received ${signal}, shutting down gracefully...`);
 
-  const forceExit = setTimeout(() => {
-    logger.error('Graceful shutdown timed out');
-    process.exit(1);
-  }, env.SHUTDOWN_TIMEOUT_MS);
+  const forceExit = setTimeout(() => process.exit(1), env.SHUTDOWN_TIMEOUT_MS);
   forceExit.unref();
 
-  server.close((error) => {
+  server.close(() => {
     clearTimeout(forceExit);
-    if (error) {
-      logger.error({ err: error }, 'Failed to close HTTP server');
-      process.exitCode = 1;
-    }
+    void prisma.$disconnect();
+    console.log('Server closed and database disconnected');
   });
 };
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('uncaughtException', (error) => {
-  logger.fatal({ err: error }, 'Uncaught exception');
+  console.error('Uncaught exception:', error);
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-  logger.fatal({ err: reason }, 'Unhandled rejection');
+  console.error('Unhandled rejection:', reason);
   process.exit(1);
 });
+
+void main();

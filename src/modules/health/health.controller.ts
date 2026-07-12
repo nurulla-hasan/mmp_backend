@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { env } from '../../config/env.js';
+import { env } from '../../config/index.js';
 import { sendResponse } from '../../utils/send-response.js';
 
 const startedAt = Date.now();

@@ -1,5 +1,5 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
-import { env } from '../config/env.js';
+import { env } from '../config/index.js';
 import type { AuthUser } from '../types/auth.js';
 
 interface AccessTokenPayload {

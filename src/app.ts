@@ -4,10 +4,9 @@ import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import { env } from './config/env.js';
+import { env } from './config/index.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { notFound } from './middlewares/not-found.js';
-import { requestContext } from './middlewares/request-context.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { apiRouter } from './routes/index.js';
 
@@ -15,7 +14,6 @@ export const createApp = () => {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', env.TRUST_PROXY);
-  app.use(requestContext);
   app.use(helmet());
   app.use(cors({
     credentials: true,
