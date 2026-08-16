@@ -13,15 +13,11 @@ const tokenOptions = {
 } as const;
 
 export const signAccessToken = (user: AuthUser): string =>
-  jwt.sign(
-    { role: user.role } satisfies AccessTokenPayload,
-    env.JWT_ACCESS_SECRET,
-    {
-      ...tokenOptions,
-      subject: user.userId,
-      expiresIn: env.JWT_ACCESS_EXPIRES_IN as SignOptions['expiresIn'],
-    },
-  );
+  jwt.sign({ role: user.role } satisfies AccessTokenPayload, env.JWT_ACCESS_SECRET, {
+    ...tokenOptions,
+    subject: user.userId,
+    expiresIn: env.JWT_ACCESS_EXPIRES_IN as SignOptions['expiresIn'],
+  });
 
 export const verifyAccessToken = (token: string): AuthUser => {
   const payload = jwt.verify(token, env.JWT_ACCESS_SECRET, tokenOptions);

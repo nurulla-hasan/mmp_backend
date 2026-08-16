@@ -8,3 +8,15 @@ enum ActiveStatus {
   ACTIVE
   BLOCKED
 }
+
+
+enum AuthProvider {
+  GOOGLE
+  CREDENTIAL
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}

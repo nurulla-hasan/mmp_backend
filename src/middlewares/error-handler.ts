@@ -23,8 +23,6 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
     message = 'Request body contains invalid JSON';
   }
 
-  if (statusCode >= 500) req.log.error({ err: error }, 'Request failed');
-
   res.status(statusCode).json({
     success: false,
     error: {
@@ -33,6 +31,5 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
       ...(details !== undefined && { details }),
       ...(env.NODE_ENV === 'development' && error instanceof Error && { stack: error.stack }),
     },
-    requestId: req.id,
   });
 };

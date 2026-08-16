@@ -2,7 +2,7 @@ import type { Request, RequestHandler } from 'express';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { AppError } from '../errors/app-error.js';
 import { prisma } from '../lib/prisma.js';
-import { USER_ROLES, type AuthUser, type UserRole } from '../types/auth.js';
+import { type AuthUser, USER_ROLES, type UserRole } from '../types/auth.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 
@@ -54,19 +54,25 @@ export const auth = (...allowedRoles: UserRole[]): RequestHandler =>
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, activeStatus: true },
+      select: { id: true, role: true, status: true, isDeleted: true },
     });
 
     if (!user) {
       return next(new AppError(401, 'User not found', 'UNAUTHORIZED'));
     }
 
-    if (user.activeStatus === 'BLOCKED') {
+    if (user.isDeleted) {
+      return next(new AppError(403, 'Your account has been deleted!', 'FORBIDDEN'));
+    }
+
+    if (user.status === 'BLOCKED') {
       return next(new AppError(403, 'Your account has been blocked!', 'FORBIDDEN'));
     }
 
     if (allowedRoles.length > 0 && !allowedRoles.includes(user.role as UserRole)) {
-      return next(new AppError(403, 'You do not have permission to access this resource', 'FORBIDDEN'));
+      return next(
+        new AppError(403, 'You do not have permission to access this resource', 'FORBIDDEN'),
+      );
     }
 
     req.user = { userId: user.id, role: user.role as UserRole };

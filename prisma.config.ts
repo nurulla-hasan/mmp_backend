@@ -5,6 +5,7 @@ export default defineConfig({
   schema: 'prisma/schema',
   migrations: { path: 'prisma/migrations' },
   datasource: {
-    url: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/mmp?schema=public',
+    url:
+      process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/mmp?schema=public',
   },
 });

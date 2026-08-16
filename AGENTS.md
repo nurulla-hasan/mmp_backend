@@ -8,7 +8,7 @@ npm run build       # prisma generate + tsup bundle
 npm run test        # vitest
 npm run check       # lint + typecheck + test + build (CI gate)
 npm run typecheck   # tsc --noEmit
-npm run lint:fix    # ESLint auto-fix
+npm run lint:fix    # Biome check --write (auto-fix)
 ```
 
 **Stack:** Express 5, TypeScript (strict), Prisma 7 + PostgreSQL 17, Zod 4, pino logging, Vitest.
