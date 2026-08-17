@@ -35,16 +35,16 @@ const shutdown = (signal: string) => {
     console.log('Server closed and database disconnected');
   });
 };
-
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
 process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error);
-  process.exit(1);
+  shutdown('uncaughtException');
 });
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
-  process.exit(1);
+  shutdown('unhandledRejection');
 });
 
 void main();

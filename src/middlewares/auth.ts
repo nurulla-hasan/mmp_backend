@@ -1,80 +1,93 @@
-import type { Request, RequestHandler } from 'express';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { AppError } from '../errors/app-error.js';
-import { prisma } from '../lib/prisma.js';
-import { type AuthUser, USER_ROLES, type UserRole } from '../types/auth.js';
-import { asyncHandler } from '../utils/async-handler.js';
-import { verifyAccessToken } from '../utils/jwt.js';
+import type { Request, RequestHandler } from "express";
+import { JsonWebTokenError, JwtPayload, TokenExpiredError } from "jsonwebtoken";
+import { AppError } from "../utils/app-error";
+import httpStatus from "http-status";
+import { env } from "../config/index";
+import { prisma } from "../lib/prisma";
+import { jwtUtils } from "../utils/jwt";
+import { catchAsync } from "../utils/catch-async";
+import { Role } from "../../generated/prisma/enums";
 
-const validRoles = new Set<UserRole>(Object.values(USER_ROLES));
+const validRoles = new Set<Role>(Object.values(Role));
 
 const getAccessToken = (req: Request): string | undefined => {
-  const cookies: unknown = req.cookies;
-  const cookieToken =
-    typeof cookies === 'object' && cookies !== null
-      ? (cookies as Record<string, unknown>)['accessToken']
-      : undefined;
-  if (typeof cookieToken === 'string' && cookieToken.length > 0) return cookieToken;
+  const token =
+    req.cookies?.accessToken ??
+    (req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : req.headers.authorization);
 
-  const authorization = req.headers.authorization?.trim();
-  if (!authorization) return undefined;
-
-  const [scheme, bearerToken, ...extraParts] = authorization.split(/\s+/);
-  if (scheme === 'Bearer') {
-    return bearerToken && extraParts.length === 0 ? bearerToken : undefined;
-  }
-
-  return authorization.includes(' ') ? undefined : authorization;
+  return token ? token : undefined;
 };
 
-export const auth = (...allowedRoles: UserRole[]): RequestHandler =>
-  asyncHandler(async (req, _res, next) => {
+export const auth = (...allowedRoles: Role[]): RequestHandler =>
+  catchAsync(async (req, _res, next) => {
     const token = getAccessToken(req);
 
     if (!token) {
-      return next(new AppError(401, 'A valid access token is required', 'UNAUTHORIZED'));
+      throw new AppError(httpStatus.UNAUTHORIZED, "You are not logged in!");
     }
 
-    let decoded: AuthUser;
+    let decoded: JwtPayload;
     try {
-      decoded = verifyAccessToken(token);
+      decoded = jwtUtils.verifyToken(token, env.JWT_ACCESS_SECRET);
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        return next(new AppError(401, 'Access token has expired', 'TOKEN_EXPIRED'));
+        throw new AppError(httpStatus.UNAUTHORIZED, "Access token has expired");
       }
       if (error instanceof JsonWebTokenError) {
-        return next(new AppError(401, 'Access token is invalid', 'INVALID_TOKEN'));
+        throw new AppError(httpStatus.UNAUTHORIZED, "Access token is invalid");
       }
-      return next(error);
+      throw error;
     }
 
-    if (!validRoles.has(decoded.role)) {
-      return next(new AppError(401, 'Access token contains an invalid role', 'UNAUTHORIZED'));
+    if (!validRoles.has(decoded.role as Role)) {
+      throw new AppError(httpStatus.UNAUTHORIZED, "Your role is invalid!");
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, role: true, status: true, isDeleted: true },
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        emailVerified: true,
+      },
     });
 
     if (!user) {
-      return next(new AppError(401, 'User not found', 'UNAUTHORIZED'));
+      throw new AppError(httpStatus.UNAUTHORIZED, "User not found");
     }
 
-    if (user.isDeleted) {
-      return next(new AppError(403, 'Your account has been deleted!', 'FORBIDDEN'));
+    if (!user.emailVerified) {
+      throw new AppError(httpStatus.UNAUTHORIZED, "Your email is not verified!");
     }
 
-    if (user.status === 'BLOCKED') {
-      return next(new AppError(403, 'Your account has been blocked!', 'FORBIDDEN'));
-    }
-
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role as UserRole)) {
-      return next(
-        new AppError(403, 'You do not have permission to access this resource', 'FORBIDDEN'),
+    if (user.status === "BLOCKED") {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Your account has been blocked!",
       );
     }
 
-    req.user = { userId: user.id, role: user.role as UserRole };
-    return next();
+    if (
+      allowedRoles.length > 0 &&
+      !allowedRoles.includes(user.role as Role)
+    ) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You do not have permission to access this resource",
+      );
+    }
+
+    req.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    };
+    next();
   });

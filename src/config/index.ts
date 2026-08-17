@@ -23,8 +23,8 @@ const envSchema = z
     SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     JWT_ACCESS_SECRET: z.string().min(32).default('development-only-secret-change-me'),
     JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
-    JWT_ISSUER: z.string().min(1).default('mmp-api'),
-    JWT_AUDIENCE: z.string().min(1).default('mmp-client'),
+    JWT_REFRESH_SECRET: z.string().min(32).default('development-only-refresh-secret-change-me'),
+    JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   })
   .superRefine((value, context) => {
     if (
@@ -35,6 +35,17 @@ const envSchema = z
         code: 'custom',
         path: ['JWT_ACCESS_SECRET'],
         message: 'A unique JWT secret is required in production',
+      });
+    }
+
+    if (
+      value.NODE_ENV === 'production' &&
+      value.JWT_REFRESH_SECRET === 'development-only-refresh-secret-change-me'
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['JWT_REFRESH_SECRET'],
+        message: 'A unique JWT refresh secret is required in production',
       });
     }
   });

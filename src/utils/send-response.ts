@@ -4,6 +4,7 @@ interface TMeta {
   page: number;
   limit: number;
   total: number;
+  totalPages: number;
 }
 
 interface TResponseData<T> {

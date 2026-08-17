@@ -1,6 +1,11 @@
-import type { RequestHandler } from 'express';
-import { AppError } from '../errors/app-error.js';
+import { NextFunction, Request, Response } from "express";
+import httpStatus from "http-status";
+import { AppError } from "../utils/app-error";
 
-export const notFound: RequestHandler = (req, _res, next) => {
-  next(new AppError(404, `Route ${req.method} ${req.originalUrl} was not found`, 'NOT_FOUND'));
+export const notFound = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  next(new AppError(httpStatus.NOT_FOUND, `Route not found: ${req.originalUrl}`));
 };
