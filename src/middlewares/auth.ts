@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from 'express';
 import httpStatus from 'http-status';
-import { JsonWebTokenError, type JwtPayload, TokenExpiredError } from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { Role } from '../../generated/prisma/enums';
 import { env } from '../config/index.js';
 import { prisma } from '../lib/prisma.js';
@@ -24,10 +24,10 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
     try {
       decoded = jwtUtils.verifyToken(token, env.JWT_ACCESS_SECRET);
     } catch (error) {
-      if (error instanceof TokenExpiredError) {
+      if (error instanceof jwt.TokenExpiredError) {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Access token has expired');
       }
-      if (error instanceof JsonWebTokenError) {
+      if (error instanceof jwt.JsonWebTokenError) {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Access token is invalid');
       }
       throw error;
