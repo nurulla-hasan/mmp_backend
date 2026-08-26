@@ -4,6 +4,7 @@ import { Strategy as GoogleStrategy, type Profile } from 'passport-google-oauth2
 import { Strategy as LocalStrategy } from 'passport-local';
 import { prisma } from '../lib/prisma.js';
 import { env } from './index.js';
+import { AuthProvider } from '../../generated/prisma/enums.js';
 
 passport.use(
   new LocalStrategy(
@@ -118,7 +119,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
                   name: profile.displayName || email.split('@')[0] || 'MMP User',
                   email,
                   googleId: profile.id,
-                  authProvider: 'GOOGLE',
+                  authProvider: AuthProvider.GOOGLE,
                   emailVerified: true,
                   imageUrl: googleImage,
                 },
