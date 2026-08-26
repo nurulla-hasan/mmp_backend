@@ -2,10 +2,25 @@
   "name": "mmp-backend",
   "version": "1.0.0",
   "private": true,
+  "description": "Production-ready MMP REST API boilerplate",
   "type": "module",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
+    "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsup",
-    "typecheck": "tsc --noEmit"
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -24,6 +39,8 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pg": "^8.22.0",
+    "pino": "^9.7.0",
+    "pino-http": "^10.5.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -37,9 +54,13 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.15.6",
+    "@types/supertest": "^6.0.3",
+    "@biomejs/biome": "^2.5.8",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
     "tsup": "^8.5.1",
     "tsx": "^4.23.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.18"
   }
 }
