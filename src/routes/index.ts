@@ -1,5 +1,5 @@
 import { Router } from 'express';
+import { authRouter } from '../modules/auth/auth.routes.js';
 
 export const apiRouter = Router();
-
-// Register feature routers here, e.g. apiRouter.use('/users', userRouter).
+apiRouter.use('/auth', authRouter);
