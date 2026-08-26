@@ -1,12 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
-import httpStatus from 'http-status';
 import { env } from '../../config/index.js';
-import { isGoogleAuthConfigured, passport } from '../../config/passport.js';
+import { passport } from '../../config/passport.js';
 import { auth } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
-import { AppError } from '../../utils/app-error.js';
-import { jwtUtils } from '../../utils/jwt.js';
 import { authController } from './auth.controller.js';
 import {
   exchangeSchema,
@@ -19,65 +15,54 @@ import {
 
 export const authRouter = Router();
 
-authRouter.post('/register', validate(registerSchema), authController.register);
-authRouter.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
-authRouter.post('/resend-otp', validate(resendOtpSchema), authController.resendOtp);
+authRouter.post(
+  '/register',
+  validate(registerSchema),
+  authController.registerUser,
+);
+
+authRouter.post(
+  '/verify-email',
+  validate(verifyEmailSchema),
+  authController.verifyEmail,
+);
+
+authRouter.post(
+  '/resend-otp',
+  validate(resendOtpSchema),
+  authController.resendVerificationOtp,
+);
+
 authRouter.post(
   '/login',
   validate(loginSchema),
-  authController.authenticateLocal,
-  authController.login,
+  authController.loginUserWithPassport,
+  authController.loginUser,
 );
-authRouter.post('/refresh-token', validate(refreshSchema), authController.refresh);
-authRouter.post('/google/exchange', validate(exchangeSchema), authController.exchangeGoogleCode);
-authRouter.post('/logout', authController.logout);
-authRouter.get('/me', auth(), authController.me);
-authRouter.get('/google', (req, res, next) => {
-  if (!isGoogleAuthConfigured) {
-    return next(
-      new AppError(httpStatus.SERVICE_UNAVAILABLE, 'Google authentication is not configured'),
-    );
-  }
-  const state = jwtUtils.createToken(
-    { nonce: randomUUID(), type: 'oauth-state' },
-    env.JWT_ACCESS_SECRET,
-    '10m',
-  );
-  res.cookie('oauthState', state, {
-    httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 10 * 60 * 1000,
-    path: `${env.API_PREFIX}/auth/google/callback`,
-  });
-  return passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    session: false,
-    state,
-  })(req, res, next);
-});
+
+authRouter.post(
+  '/refresh-token',
+  validate(refreshSchema),
+  authController.refreshAuthTokens,
+);
+
+authRouter.post(
+  '/google/exchange',
+  validate(exchangeSchema),
+  authController.exchangeGoogleLoginCode,
+);
+
+authRouter.post('/logout', authController.logoutUser);
+authRouter.get('/me', auth(), authController.getMe);
+
+authRouter.get('/google', authController.startGoogleLogin);
+
 authRouter.get(
   '/google/callback',
-  (req, res, next) => {
-    const state = typeof req.query.state === 'string' ? req.query.state : '';
-    const cookieState = req.cookies?.oauthState;
-    res.clearCookie('oauthState', { path: `${env.API_PREFIX}/auth/google/callback` });
-    if (!state || !cookieState || state !== cookieState) {
-      return next(new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid'));
-    }
-    try {
-      const payload = jwtUtils.verifyToken(state, env.JWT_ACCESS_SECRET);
-      if (payload.type !== 'oauth-state') throw new Error('Invalid state type');
-      return next();
-    } catch {
-      return next(
-        new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid or expired'),
-      );
-    }
-  },
+  authController.verifyGoogleLoginState,
   passport.authenticate('google', {
     failureRedirect: `${env.FRONTEND_URL}/login?error=google_auth_failed`,
     session: false,
   }),
-  authController.googleCallback,
+  authController.googleLoginCallback,
 );
