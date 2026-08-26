@@ -26,7 +26,20 @@ export const globalErrorHandler: ErrorRequestHandler = (error: unknown, _req, re
     if (prismaCode === 'P2002') {
       statusCode = 409;
       code = 'DUPLICATE_ENTRY';
-      message = 'This email already exists.';
+      const field = (error as { meta?: { target?: string[] } }).meta?.target?.[0] ?? 'field';
+      message = `Duplicate value for '${field}'. This ${field} already exists.`;
+    } else if (prismaCode === 'P2025') {
+      statusCode = 404;
+      code = 'NOT_FOUND';
+      message = (error as { meta?: { cause?: string } }).meta?.cause ?? 'Record not found.';
+    } else if (prismaCode === 'P2003') {
+      statusCode = 400;
+      code = 'FOREIGN_KEY_CONSTRAINT';
+      message = 'Invalid reference: the related record does not exist.';
+    } else if (prismaCode === 'P2006') {
+      statusCode = 400;
+      code = 'INVALID_DATA_TYPE';
+      message = 'Invalid data type provided.';
     }
   }
 
@@ -34,7 +47,11 @@ export const globalErrorHandler: ErrorRequestHandler = (error: unknown, _req, re
     success: false,
     statusCode,
     message,
-    error: { code, message, ...(details !== undefined && { details }) },
-    ...(env.NODE_ENV === 'development' && error instanceof Error && { stack: error.stack }),
+    error: {
+      code,
+      message,
+      ...(details !== undefined && { details }),
+      ...(env.NODE_ENV === 'development' && error instanceof Error && { stack: error.stack }),
+    },
   });
 };
