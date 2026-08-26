@@ -41,7 +41,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
       },
       async (_accessToken, _refreshToken, profile: Profile, done) => {
         try {
-          const email = profile.emails?.find((item) => item.verified)?.value ?? profile.emails?.[0]?.value;
+          const email = profile.emails?.[0]?.value;
           if (!email) return done(null, false, { message: 'Google account has no email address.' });
 
           const normalizedEmail = email.trim().toLowerCase();

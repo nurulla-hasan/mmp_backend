@@ -8,7 +8,7 @@ import { sendResponse } from '../../utils/send-response.js';
 import { authService } from './auth.service.js';
 
 const authenticateLocal: RequestHandler = (req, res, next) => {
-  passport.authenticate('local', { session: false }, (error: unknown, user: Express.User | false, info?: { message?: string }) => {
+  passport.authenticate('local', { session: false }, (error: unknown, user: Express.User | false | null | undefined, info?: { message?: string }) => {
     if (error) return next(error);
     if (!user) return next(new AppError(httpStatus.UNAUTHORIZED, info?.message ?? 'Login failed'));
     req.user = user;
