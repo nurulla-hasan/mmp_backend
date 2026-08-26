@@ -1,19 +1,19 @@
-export type PublicUser = {
+export interface IPublicUser {
   id: string;
   name: string;
   email: string;
   role: 'USER' | 'SURVEYOR' | 'ADMIN';
   status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
   imageUrl: string;
-};
+}
 
-export type TokenPair = {
+export interface IAuthTokens {
   accessToken: string;
   refreshToken: string;
-};
+}
 
-export type RegisterPayload = {
+export interface IRegisterUser {
   name: string;
   email: string;
   password: string;
-};
+}
