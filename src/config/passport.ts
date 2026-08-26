@@ -106,7 +106,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
               user = await prisma.user.update({
                 where: { id: userWithSameEmail.id },
                 data: {
-                  googleId: profile.id,
+                  googleId: userWithSameEmail.googleId ?? profile.id,
                   emailVerified: true,
                   imageUrl: userWithSameEmail.imageUrl || googleImage,
                 },
