@@ -4,27 +4,37 @@ import { env } from '../../config/index.js';
 import { deleteCache, getCache, getCacheTtl, setCache } from '../../lib/redis.js';
 import { AppError } from '../../utils/app-error.js';
 
-type OtpData = {
+export type PendingRegistration = {
+  name: string;
+  email: string;
+  passwordHash: string;
+};
+
+type RegistrationData = PendingRegistration & {
   otp: string;
   attempts: number;
 };
 
-const getOtpKey = (email: string): string => `otp:${email}`;
+const getRegistrationKey = (email: string): string => `registration:${email}`;
 
-const generateOtp = async (email: string): Promise<string> => {
-  const otp = randomInt(100000, 1000000).toString();
-  await setCache<OtpData>(
-    getOtpKey(email),
-    { otp, attempts: env.OTP_MAX_ATTEMPTS },
+const generateOtp = (): string => randomInt(100000, 1000000).toString();
+
+const createRegistration = async (user: PendingRegistration): Promise<string> => {
+  const otp = generateOtp();
+  await setCache<RegistrationData>(
+    getRegistrationKey(user.email),
+    { ...user, otp, attempts: env.OTP_MAX_ATTEMPTS },
     env.OTP_EXPIRES_IN_SECONDS,
   );
   return otp;
 };
 
-const validateOtp = async (email: string, otp: string): Promise<void> => {
-  const key = getOtpKey(email);
-  const data = await getCache<OtpData>(key);
-  if (!data) throw new AppError(httpStatus.BAD_REQUEST, 'OTP has expired', 'OTP_EXPIRED');
+const validateOtp = async (email: string, otp: string): Promise<PendingRegistration> => {
+  const key = getRegistrationKey(email);
+  const data = await getCache<RegistrationData>(key);
+  if (!data) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Registration has expired. Please register again.', 'OTP_EXPIRED');
+  }
   if (data.attempts <= 0) {
     throw new AppError(httpStatus.TOO_MANY_REQUESTS, 'OTP attempts exceeded', 'OTP_ATTEMPTS_EXCEEDED');
   }
@@ -35,10 +45,26 @@ const validateOtp = async (email: string, otp: string): Promise<void> => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP', 'INVALID_OTP');
   }
 
+  return { name: data.name, email: data.email, passwordHash: data.passwordHash };
 };
 
-const deleteOtp = async (email: string): Promise<void> => {
-  await deleteCache(getOtpKey(email));
+const resendOtp = async (email: string): Promise<string> => {
+  const data = await getCache<RegistrationData>(getRegistrationKey(email));
+  if (!data) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Registration has expired. Please register again.', 'OTP_EXPIRED');
+  }
+
+  const otp = generateOtp();
+  await setCache<RegistrationData>(
+    getRegistrationKey(email),
+    { ...data, otp, attempts: env.OTP_MAX_ATTEMPTS },
+    env.OTP_EXPIRES_IN_SECONDS,
+  );
+  return otp;
 };
 
-export const otpService = { deleteOtp, generateOtp, validateOtp };
+const deleteRegistration = async (email: string): Promise<void> => {
+  await deleteCache(getRegistrationKey(email));
+};
+
+export const otpService = { createRegistration, deleteRegistration, resendOtp, validateOtp };

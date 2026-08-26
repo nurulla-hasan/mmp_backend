@@ -36,7 +36,7 @@ const register = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,
-    message: 'Account created. Check your email for the OTP.',
+    message: 'Verification code sent. Complete verification to create your account.',
     data: result,
   });
 });

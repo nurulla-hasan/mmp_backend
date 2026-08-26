@@ -45,48 +45,40 @@ const assertActiveUser = (user: User | null): User => {
 
 const register = async (input: { name: string; email: string; password: string }) => {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing?.emailVerified) {
-    throw new AppError(httpStatus.CONFLICT, 'This email already exists');
-  }
+  if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
 
-  const password = await bcrypt.hash(input.password, 12);
-  if (existing) {
-    await prisma.user.update({
-      where: { id: existing.id },
-      data: { name: input.name, password, authProvider: 'CREDENTIAL' },
-    });
-  } else {
-    await prisma.user.create({
-      data: {
-        name: input.name,
-        email: input.email,
-        password,
-        authProvider: 'CREDENTIAL',
-        emailVerified: false,
-      },
-    });
-  }
-
-  const otp = await otpService.generateOtp(input.email);
+  const passwordHash = await bcrypt.hash(input.password, 12);
+  const otp = await otpService.createRegistration({
+    name: input.name,
+    email: input.email,
+    passwordHash,
+  });
   await sendVerificationEmail(input.email, otp);
   return { email: input.email };
 };
 
 const verifyEmail = async (email: string, otp: string) => {
-  await otpService.validateOtp(email, otp);
-  const user = await prisma.user.update({
-    where: { email },
-    data: { emailVerified: true },
+  const pendingUser = await otpService.validateOtp(email, otp);
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+
+  const user = await prisma.user.create({
+    data: {
+      name: pendingUser.name,
+      email: pendingUser.email,
+      password: pendingUser.passwordHash,
+      authProvider: 'CREDENTIAL',
+      emailVerified: true,
+    },
   });
-  await otpService.deleteOtp(email);
+  await otpService.deleteRegistration(email);
   return { user: toPublicUser(user), tokens: createTokenPair(user) };
 };
 
 const resendOtp = async (email: string): Promise<void> => {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  if (user.emailVerified) throw new AppError(httpStatus.BAD_REQUEST, 'Email is already verified');
-  const otp = await otpService.generateOtp(email);
+  if (user) throw new AppError(httpStatus.BAD_REQUEST, 'Email is already registered');
+  const otp = await otpService.resendOtp(email);
   await sendVerificationEmail(email, otp);
 };
 

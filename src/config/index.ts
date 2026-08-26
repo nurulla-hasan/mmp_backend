@@ -32,7 +32,7 @@ const envSchema = z
       .url()
       .default('http://localhost:5000/api/v1/auth/google/callback'),
     REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
-    OTP_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(120),
+    OTP_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(300),
     OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
