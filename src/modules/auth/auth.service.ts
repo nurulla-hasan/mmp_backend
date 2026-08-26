@@ -7,63 +7,105 @@ import { sendVerificationEmail } from '../../lib/email.js';
 import { prisma } from '../../lib/prisma.js';
 import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
-import type { PublicUser, RegisterPayload, TokenPair } from './auth.types.js';
+import type { IAuthTokens, IPublicUser, IRegisterUser } from './auth.types.js';
 import { otpService } from './otp.service.js';
 
-const toPublicUser = (user: User): PublicUser => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  role: user.role,
-  status: user.status,
-  imageUrl: user.imageUrl,
-});
+const getPublicUser = (user: User): IPublicUser => {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    imageUrl: user.imageUrl,
+  };
+};
 
-const createTokenPair = (user: Pick<User, 'id' | 'email' | 'role'>): TokenPair => ({
-  accessToken: jwtUtils.createToken(
-    { id: user.id, email: user.email, role: user.role, type: 'access' },
+const createAuthTokens = (user: Pick<User, 'id' | 'email' | 'role'>): IAuthTokens => {
+  const accessToken = jwtUtils.createToken(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      type: 'access',
+    },
     env.JWT_ACCESS_SECRET,
     env.JWT_ACCESS_EXPIRES_IN,
-  ),
-  refreshToken: jwtUtils.createToken(
-    { id: user.id, type: 'refresh' },
+  );
+
+  const refreshToken = jwtUtils.createToken(
+    {
+      id: user.id,
+      type: 'refresh',
+    },
     env.JWT_REFRESH_SECRET,
     env.JWT_REFRESH_EXPIRES_IN,
-  ),
-});
+  );
 
-const assertActiveUser = (user: User | null): User => {
-  if (!user) throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
+  return {
+    accessToken,
+    refreshToken,
+  };
+};
+
+const checkUserCanLogin = (user: User | null): User => {
+  if (!user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
+  }
+
   if (user.status !== 'ACTIVE') {
     throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
   }
+
   if (!user.emailVerified) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified');
   }
+
   return user;
 };
 
-const register = async (payload: RegisterPayload) => {
-  const existing = await prisma.user.findUnique({
-    where: { email: payload.email },
-  });
-  if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+const registerUser = async (payload: IRegisterUser) => {
+  const { name, email, password } = payload;
 
-  const passwordHash = await bcrypt.hash(payload.password, 12);
-  const otp = await otpService.createRegistration({
-    name: payload.name,
-    email: payload.email,
+  // Step 1: Make sure the email is not already registered.
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+  }
+
+  // Step 2: Hash the password before saving it in Redis.
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  // Step 3: Keep the pending user and OTP in Redis for 5 minutes.
+  const otp = await otpService.savePendingUser({
+    name,
+    email,
     passwordHash,
   });
-  await sendVerificationEmail(payload.email, otp);
-  return { email: payload.email };
+
+  // Step 4: Send the OTP to the user's email.
+  await sendVerificationEmail(email, otp);
+
+  return { email };
 };
 
-const verifyEmail = async (email: string, otp: string) => {
-  const pendingUser = await otpService.validateOtp(email, otp);
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+const verifyEmailAndCreateUser = async (email: string, otp: string) => {
+  // Step 1: Verify the OTP and get the pending user from Redis.
+  const pendingUser = await otpService.verifyRegistrationOtp(email, otp);
 
+  // Step 2: Check the database again before creating the user.
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+  }
+
+  // Step 3: Create the verified user in PostgreSQL.
   const user = await prisma.user.create({
     data: {
       name: pendingUser.name,
@@ -73,56 +115,102 @@ const verifyEmail = async (email: string, otp: string) => {
       emailVerified: true,
     },
   });
-  await otpService.deleteRegistration(email);
-  return { user: toPublicUser(user), tokens: createTokenPair(user) };
+
+  // Step 4: Delete the temporary registration data from Redis.
+  await otpService.deletePendingUser(email);
+
+  const tokens = createAuthTokens(user);
+
+  return {
+    user: getPublicUser(user),
+    tokens,
+  };
 };
 
-const resendOtp = async (email: string): Promise<void> => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (user) throw new AppError(httpStatus.BAD_REQUEST, 'Email is already registered');
-  const otp = await otpService.resendOtp(email);
-  await sendVerificationEmail(email, otp);
+const resendVerificationOtp = async (email: string): Promise<void> => {
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Email is already registered');
+  }
+
+  const newOtp = await otpService.resendRegistrationOtp(email);
+  await sendVerificationEmail(email, newOtp);
 };
 
-const refresh = async (refreshToken: string) => {
-  let payload: JwtPayload;
+const refreshAuthTokens = async (refreshToken: string) => {
+  let tokenPayload: JwtPayload;
+
   try {
-    payload = jwtUtils.verifyToken(refreshToken, env.JWT_REFRESH_SECRET);
+    tokenPayload = jwtUtils.verifyToken(refreshToken, env.JWT_REFRESH_SECRET);
   } catch {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Refresh token is invalid or expired');
   }
-  if (payload.type !== 'refresh' || typeof payload.id !== 'string') {
+
+  if (tokenPayload.type !== 'refresh' || typeof tokenPayload.id !== 'string') {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Refresh token is invalid');
   }
-  const user = assertActiveUser(await prisma.user.findUnique({ where: { id: payload.id } }));
-  return { user: toPublicUser(user), tokens: createTokenPair(user) };
+
+  const foundUser = await prisma.user.findUnique({
+    where: { id: tokenPayload.id },
+  });
+
+  const user = checkUserCanLogin(foundUser);
+  const tokens = createAuthTokens(user);
+
+  return {
+    user: getPublicUser(user),
+    tokens,
+  };
 };
 
-const createGoogleExchangeCode = (user: Pick<User, 'id'>): string =>
-  jwtUtils.createToken({ id: user.id, type: 'oauth-exchange' }, env.JWT_ACCESS_SECRET, '60s');
+const createGoogleLoginCode = (user: Pick<User, 'id'>): string => {
+  return jwtUtils.createToken(
+    {
+      id: user.id,
+      type: 'oauth-exchange',
+    },
+    env.JWT_ACCESS_SECRET,
+    '60s',
+  );
+};
 
-const exchangeGoogleCode = async (code: string) => {
-  let payload: JwtPayload;
+const exchangeGoogleLoginCode = async (code: string) => {
+  let tokenPayload: JwtPayload;
+
   try {
-    payload = jwtUtils.verifyToken(code, env.JWT_ACCESS_SECRET);
+    tokenPayload = jwtUtils.verifyToken(code, env.JWT_ACCESS_SECRET);
   } catch {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in code is invalid or expired');
   }
-  if (payload.type !== 'oauth-exchange' || typeof payload.id !== 'string') {
+
+  if (tokenPayload.type !== 'oauth-exchange' || typeof tokenPayload.id !== 'string') {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in code is invalid');
   }
-  const user = assertActiveUser(await prisma.user.findUnique({ where: { id: payload.id } }));
-  return { user: toPublicUser(user), tokens: createTokenPair(user) };
+
+  const foundUser = await prisma.user.findUnique({
+    where: { id: tokenPayload.id },
+  });
+
+  const user = checkUserCanLogin(foundUser);
+  const tokens = createAuthTokens(user);
+
+  return {
+    user: getPublicUser(user),
+    tokens,
+  };
 };
 
 export const authService = {
-  assertActiveUser,
-  createGoogleExchangeCode,
-  createTokenPair,
-  exchangeGoogleCode,
-  refresh,
-  register,
-  resendOtp,
-  toPublicUser,
-  verifyEmail,
+  checkUserCanLogin,
+  createAuthTokens,
+  createGoogleLoginCode,
+  exchangeGoogleLoginCode,
+  getPublicUser,
+  refreshAuthTokens,
+  registerUser,
+  resendVerificationOtp,
+  verifyEmailAndCreateUser,
 };
