@@ -17,6 +17,7 @@ const envSchema = z
       .url()
       .default('postgresql://postgres:postgres@localhost:5432/mmp?schema=public'),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
+    FRONTEND_URL: z.url().default('http://localhost:3000'),
     TRUST_PROXY: booleanString,
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
@@ -25,33 +26,39 @@ const envSchema = z
     JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
     JWT_REFRESH_SECRET: z.string().min(32).default('development-only-refresh-secret-change-me'),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_CALLBACK_URL: z
+      .url()
+      .default('http://localhost:5000/api/v1/auth/google/callback'),
   })
   .superRefine((value, context) => {
-    if (
-      value.NODE_ENV === 'production' &&
-      value.JWT_ACCESS_SECRET === 'development-only-secret-change-me'
-    ) {
-      context.addIssue({
-        code: 'custom',
-        path: ['JWT_ACCESS_SECRET'],
-        message: 'A unique JWT secret is required in production',
-      });
-    }
-
-    if (
-      value.NODE_ENV === 'production' &&
-      value.JWT_REFRESH_SECRET === 'development-only-refresh-secret-change-me'
-    ) {
-      context.addIssue({
-        code: 'custom',
-        path: ['JWT_REFRESH_SECRET'],
-        message: 'A unique JWT refresh secret is required in production',
-      });
+    if (value.NODE_ENV === 'production') {
+      if (value.JWT_ACCESS_SECRET === 'development-only-secret-change-me') {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_ACCESS_SECRET'],
+          message: 'A unique JWT secret is required in production',
+        });
+      }
+      if (value.JWT_REFRESH_SECRET === 'development-only-refresh-secret-change-me') {
+        context.addIssue({
+          code: 'custom',
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'A unique JWT refresh secret is required in production',
+        });
+      }
+      if (!value.GOOGLE_CLIENT_ID || !value.GOOGLE_CLIENT_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['GOOGLE_CLIENT_ID'],
+          message: 'Google OAuth credentials are required in production',
+        });
+      }
     }
   });
 
 const parsed = envSchema.safeParse(process.env);
-
 if (!parsed.success) {
   const issues = parsed.error.issues
     .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
