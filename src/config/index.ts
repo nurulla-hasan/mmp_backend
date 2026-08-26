@@ -31,6 +31,14 @@ const envSchema = z
     GOOGLE_CALLBACK_URL: z
       .url()
       .default('http://localhost:5000/api/v1/auth/google/callback'),
+    REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
+    OTP_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(120),
+    OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    MAIL_FROM: z.string().default('Mouza Map Pro <no-reply@example.com>'),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production') {
@@ -53,6 +61,13 @@ const envSchema = z
           code: 'custom',
           path: ['GOOGLE_CLIENT_ID'],
           message: 'Google OAuth credentials are required in production',
+        });
+      }
+      if (!value.SMTP_HOST || !value.SMTP_USER || !value.SMTP_PASS) {
+        context.addIssue({
+          code: 'custom',
+          path: ['SMTP_HOST'],
+          message: 'SMTP credentials are required in production',
         });
       }
     }

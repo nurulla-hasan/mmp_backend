@@ -1,4 +1,4 @@
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import httpStatus from 'http-status';
 import { env } from '../../config/index.js';
 import { passport } from '../../config/passport.js';
@@ -10,7 +10,11 @@ import { authService } from './auth.service.js';
 const authenticateLocal: RequestHandler = (req, res, next) => {
   passport.authenticate('local', { session: false }, (error: unknown, user: Express.User | false | null | undefined, info?: { message?: string }) => {
     if (error) return next(error);
-    if (!user) return next(new AppError(httpStatus.UNAUTHORIZED, info?.message ?? 'Login failed'));
+    if (!user) {
+      return next(
+        new AppError(httpStatus.UNAUTHORIZED, info?.message ?? 'Login failed'),
+      );
+    }
     req.user = user;
     next();
   })(req, res, next);
@@ -32,8 +36,28 @@ const register = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,
-    message: 'Account created successfully',
+    message: 'Account created. Check your email for the OTP.',
+    data: result,
+  });
+});
+
+const verifyEmail = catchAsync(async (req, res) => {
+  const result = await authService.verifyEmail(req.body.email, req.body.otp);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Email verification successful',
     data: { user: result.user, ...result.tokens },
+  });
+});
+
+const resendOtp = catchAsync(async (req, res) => {
+  await authService.resendOtp(req.body.email);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'A new OTP has been sent',
+    data: null,
   });
 });
 
@@ -94,4 +118,6 @@ export const authController = {
   me,
   refresh,
   register,
+  resendOtp,
+  verifyEmail,
 };

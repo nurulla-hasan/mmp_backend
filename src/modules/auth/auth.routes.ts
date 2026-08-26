@@ -8,11 +8,20 @@ import { validate } from '../../middlewares/validate.js';
 import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
 import { authController } from './auth.controller.js';
-import { exchangeSchema, loginSchema, refreshSchema, registerSchema } from './auth.validation.js';
+import {
+  exchangeSchema,
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+  resendOtpSchema,
+  verifyEmailSchema,
+} from './auth.validation.js';
 
 export const authRouter = Router();
 
 authRouter.post('/register', validate(registerSchema), authController.register);
+authRouter.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
+authRouter.post('/resend-otp', validate(resendOtpSchema), authController.resendOtp);
 authRouter.post('/login', validate(loginSchema), authController.authenticateLocal, authController.login);
 authRouter.post('/refresh-token', validate(refreshSchema), authController.refresh);
 authRouter.post('/google/exchange', validate(exchangeSchema), authController.exchangeGoogleCode);

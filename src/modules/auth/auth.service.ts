@@ -4,9 +4,11 @@ import type { JwtPayload } from 'jsonwebtoken';
 import type { User } from '../../../generated/prisma/client';
 import { env } from '../../config/index.js';
 import { prisma } from '../../lib/prisma.js';
+import { sendVerificationEmail } from '../../lib/email.js';
 import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
 import type { PublicUser, TokenPair } from './auth.types.js';
+import { otpService } from './otp.service.js';
 
 const toPublicUser = (user: User): PublicUser => ({
   id: user.id,
@@ -43,19 +45,49 @@ const assertActiveUser = (user: User | null): User => {
 
 const register = async (input: { name: string; email: string; password: string }) => {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+  if (existing?.emailVerified) {
+    throw new AppError(httpStatus.CONFLICT, 'This email already exists');
+  }
 
-  const user = await prisma.user.create({
-    data: {
-      name: input.name,
-      email: input.email,
-      password: await bcrypt.hash(input.password, 12),
-      authProvider: 'CREDENTIAL',
-      // TODO: set false when the email-delivery/OTP module is connected.
-      emailVerified: true,
-    },
+  const password = await bcrypt.hash(input.password, 12);
+  if (existing) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { name: input.name, password, authProvider: 'CREDENTIAL' },
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        password,
+        authProvider: 'CREDENTIAL',
+        emailVerified: false,
+      },
+    });
+  }
+
+  const otp = await otpService.generateOtp(input.email);
+  await sendVerificationEmail(input.email, otp);
+  return { email: input.email };
+};
+
+const verifyEmail = async (email: string, otp: string) => {
+  await otpService.validateOtp(email, otp);
+  const user = await prisma.user.update({
+    where: { email },
+    data: { emailVerified: true },
   });
+  await otpService.deleteOtp(email);
   return { user: toPublicUser(user), tokens: createTokenPair(user) };
+};
+
+const resendOtp = async (email: string): Promise<void> => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  if (user.emailVerified) throw new AppError(httpStatus.BAD_REQUEST, 'Email is already verified');
+  const otp = await otpService.generateOtp(email);
+  await sendVerificationEmail(email, otp);
 };
 
 const refresh = async (refreshToken: string) => {
@@ -100,5 +132,7 @@ export const authService = {
   exchangeGoogleCode,
   refresh,
   register,
+  resendOtp,
   toPublicUser,
+  verifyEmail,
 };

@@ -20,5 +20,3 @@ declare module 'express-serve-static-core' {
     user?: Express.User;
   }
 }
-
-export {};
