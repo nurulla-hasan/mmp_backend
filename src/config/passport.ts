@@ -7,20 +7,48 @@ import { env } from './index.js';
 
 passport.use(
   new LocalStrategy(
-    { usernameField: 'email', passwordField: 'password', session: false },
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+      session: false,
+    },
     async (rawEmail, password, done) => {
       try {
         const email = rawEmail.trim().toLowerCase();
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user?.password || !(await bcrypt.compare(password, user.password))) {
-          return done(null, false, { message: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।' });
+
+        // Step 1: Find the user by email.
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user || !user.password) {
+          return done(null, false, {
+            message: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।',
+          });
         }
+
+        // Step 2: Match the submitted password with the hashed password.
+        const isPasswordMatched = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordMatched) {
+          return done(null, false, {
+            message: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।',
+          });
+        }
+
+        // Step 3: Make sure the account is active and verified.
         if (user.status !== 'ACTIVE') {
-          return done(null, false, { message: 'আপনার অ্যাকাউন্টটি ব্যবহারযোগ্য নয়।' });
+          return done(null, false, {
+            message: 'আপনার অ্যাকাউন্টটি ব্যবহারযোগ্য নয়।',
+          });
         }
+
         if (!user.emailVerified) {
-          return done(null, false, { message: 'আপনার ইমেইল ভেরিফাই করুন।' });
+          return done(null, false, {
+            message: 'আপনার ইমেইল ভেরিফাই করুন।',
+          });
         }
+
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -29,7 +57,9 @@ passport.use(
   ),
 );
 
-export const isGoogleAuthConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+export const isGoogleAuthConfigured = Boolean(
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
+);
 
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   passport.use(
@@ -41,36 +71,67 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
       },
       async (_accessToken, _refreshToken, profile: Profile, done) => {
         try {
-          const email = profile.emails?.[0]?.value;
-          if (!email) return done(null, false, { message: 'Google account has no email address.' });
+          const googleEmail = profile.emails?.[0]?.value;
 
-          const normalizedEmail = email.trim().toLowerCase();
-          const existing = await prisma.user.findFirst({
-            where: { OR: [{ googleId: profile.id }, { email: normalizedEmail }] },
+          if (!googleEmail) {
+            return done(null, false, {
+              message: 'Google account has no email address.',
+            });
+          }
+
+          const email = googleEmail.trim().toLowerCase();
+          const googleImage = profile.photos?.[0]?.value || '';
+
+          // Step 1: Check whether this Google account is already connected.
+          let user = await prisma.user.findFirst({
+            where: { googleId: profile.id },
           });
-          const user = existing
-            ? await prisma.user.update({
-                where: { id: existing.id },
+
+          if (user) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                emailVerified: true,
+                imageUrl: user.imageUrl || googleImage,
+              },
+            });
+          } else {
+            // Step 2: Check whether a credential account exists with this email.
+            const userWithSameEmail = await prisma.user.findUnique({
+              where: { email },
+            });
+
+            if (userWithSameEmail) {
+              // Link Google login with the existing credential account.
+              user = await prisma.user.update({
+                where: { id: userWithSameEmail.id },
                 data: {
-                  googleId: existing.googleId ?? profile.id,
+                  googleId: profile.id,
                   emailVerified: true,
-                  imageUrl: existing.imageUrl || profile.photos?.[0]?.value || '',
+                  imageUrl: userWithSameEmail.imageUrl || googleImage,
                 },
-              })
-            : await prisma.user.create({
+              });
+            } else {
+              // Step 3: Create a new user when no account exists.
+              user = await prisma.user.create({
                 data: {
-                  name: profile.displayName || normalizedEmail.split('@')[0] || 'MMP User',
-                  email: normalizedEmail,
+                  name: profile.displayName || email.split('@')[0] || 'MMP User',
+                  email,
                   googleId: profile.id,
                   authProvider: 'GOOGLE',
                   emailVerified: true,
-                  imageUrl: profile.photos?.[0]?.value || '',
+                  imageUrl: googleImage,
                 },
               });
+            }
+          }
 
           if (user.status !== 'ACTIVE') {
-            return done(null, false, { message: 'Your account is unavailable.' });
+            return done(null, false, {
+              message: 'Your account is unavailable.',
+            });
           }
+
           return done(null, user);
         } catch (error) {
           return done(error);
