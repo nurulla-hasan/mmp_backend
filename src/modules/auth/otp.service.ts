@@ -4,42 +4,59 @@ import { env } from '../../config/index.js';
 import { deleteCache, getCache, getCacheTtl, setCache } from '../../lib/redis.js';
 import { AppError } from '../../utils/app-error.js';
 
-export type PendingRegistration = {
+export interface IPendingUser {
   name: string;
   email: string;
   passwordHash: string;
-};
+}
 
-type RegistrationData = PendingRegistration & {
+interface IRegistrationData extends IPendingUser {
   otp: string;
   attempts: number;
+}
+
+const getRegistrationKey = (email: string): string => {
+  return `registration:${email}`;
 };
 
-const getRegistrationKey = (email: string): string => `registration:${email}`;
+const generateOtp = (): string => {
+  return randomInt(100000, 1000000).toString();
+};
 
-const generateOtp = (): string => randomInt(100000, 1000000).toString();
-
-const createRegistration = async (user: PendingRegistration): Promise<string> => {
+const savePendingUser = async (userData: IPendingUser): Promise<string> => {
   const otp = generateOtp();
-  await setCache<RegistrationData>(
-    getRegistrationKey(user.email),
-    { ...user, otp, attempts: env.OTP_MAX_ATTEMPTS },
+
+  const registrationData: IRegistrationData = {
+    ...userData,
+    otp,
+    attempts: env.OTP_MAX_ATTEMPTS,
+  };
+
+  await setCache(
+    getRegistrationKey(userData.email),
+    registrationData,
     env.OTP_EXPIRES_IN_SECONDS,
   );
+
   return otp;
 };
 
-const validateOtp = async (email: string, otp: string): Promise<PendingRegistration> => {
+const verifyRegistrationOtp = async (
+  email: string,
+  submittedOtp: string,
+): Promise<IPendingUser> => {
   const key = getRegistrationKey(email);
-  const data = await getCache<RegistrationData>(key);
-  if (!data) {
+  const registrationData = await getCache<IRegistrationData>(key);
+
+  if (!registrationData) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Registration has expired. Please register again.',
       'OTP_EXPIRED',
     );
   }
-  if (data.attempts <= 0) {
+
+  if (registrationData.attempts <= 0) {
     throw new AppError(
       httpStatus.TOO_MANY_REQUESTS,
       'OTP attempts exceeded',
@@ -47,22 +64,31 @@ const validateOtp = async (email: string, otp: string): Promise<PendingRegistrat
     );
   }
 
-  if (data.otp !== otp) {
-    const ttl = await getCacheTtl(key);
-    await setCache(key, { ...data, attempts: data.attempts - 1 }, Math.max(ttl, 1));
+  if (registrationData.otp !== submittedOtp) {
+    const remainingTime = await getCacheTtl(key);
+    const updatedData = {
+      ...registrationData,
+      attempts: registrationData.attempts - 1,
+    };
+
+    // Keep the old expiry time when an incorrect OTP is submitted.
+    await setCache(key, updatedData, Math.max(remainingTime, 1));
+
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP', 'INVALID_OTP');
   }
 
   return {
-    name: data.name,
-    email: data.email,
-    passwordHash: data.passwordHash,
+    name: registrationData.name,
+    email: registrationData.email,
+    passwordHash: registrationData.passwordHash,
   };
 };
 
-const resendOtp = async (email: string): Promise<string> => {
-  const data = await getCache<RegistrationData>(getRegistrationKey(email));
-  if (!data) {
+const resendRegistrationOtp = async (email: string): Promise<string> => {
+  const key = getRegistrationKey(email);
+  const registrationData = await getCache<IRegistrationData>(key);
+
+  if (!registrationData) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Registration has expired. Please register again.',
@@ -70,22 +96,25 @@ const resendOtp = async (email: string): Promise<string> => {
     );
   }
 
-  const otp = generateOtp();
-  await setCache<RegistrationData>(
-    getRegistrationKey(email),
-    { ...data, otp, attempts: env.OTP_MAX_ATTEMPTS },
-    env.OTP_EXPIRES_IN_SECONDS,
-  );
-  return otp;
+  const newOtp = generateOtp();
+  const updatedData: IRegistrationData = {
+    ...registrationData,
+    otp: newOtp,
+    attempts: env.OTP_MAX_ATTEMPTS,
+  };
+
+  await setCache(key, updatedData, env.OTP_EXPIRES_IN_SECONDS);
+
+  return newOtp;
 };
 
-const deleteRegistration = async (email: string): Promise<void> => {
+const deletePendingUser = async (email: string): Promise<void> => {
   await deleteCache(getRegistrationKey(email));
 };
 
 export const otpService = {
-  createRegistration,
-  deleteRegistration,
-  resendOtp,
-  validateOtp,
+  deletePendingUser,
+  resendRegistrationOtp,
+  savePendingUser,
+  verifyRegistrationOtp,
 };
