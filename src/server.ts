@@ -10,7 +10,9 @@ async function main() {
   try {
     await prisma.$connect();
     await ensureRedisConnected();
-    server.listen(env.PORT, env.HOST, () => console.log(`Server started on ${env.HOST}:${env.PORT}`));
+    server.listen(env.PORT, env.HOST, () =>
+      console.log(`Server started on ${env.HOST}:${env.PORT}`),
+    );
   } catch (error) {
     console.error('Failed to start server:', error);
     await prisma.$disconnect();

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import httpStatus from 'http-status';
-import { isGoogleAuthConfigured, passport } from '../../config/passport.js';
 import { env } from '../../config/index.js';
+import { isGoogleAuthConfigured, passport } from '../../config/passport.js';
 import { auth } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
 import { AppError } from '../../utils/app-error.js';
@@ -22,14 +22,21 @@ export const authRouter = Router();
 authRouter.post('/register', validate(registerSchema), authController.register);
 authRouter.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 authRouter.post('/resend-otp', validate(resendOtpSchema), authController.resendOtp);
-authRouter.post('/login', validate(loginSchema), authController.authenticateLocal, authController.login);
+authRouter.post(
+  '/login',
+  validate(loginSchema),
+  authController.authenticateLocal,
+  authController.login,
+);
 authRouter.post('/refresh-token', validate(refreshSchema), authController.refresh);
 authRouter.post('/google/exchange', validate(exchangeSchema), authController.exchangeGoogleCode);
 authRouter.post('/logout', authController.logout);
 authRouter.get('/me', auth(), authController.me);
 authRouter.get('/google', (req, res, next) => {
   if (!isGoogleAuthConfigured) {
-    return next(new AppError(httpStatus.SERVICE_UNAVAILABLE, 'Google authentication is not configured'));
+    return next(
+      new AppError(httpStatus.SERVICE_UNAVAILABLE, 'Google authentication is not configured'),
+    );
   }
   const state = jwtUtils.createToken(
     { nonce: randomUUID(), type: 'oauth-state' },
@@ -63,7 +70,9 @@ authRouter.get(
       if (payload.type !== 'oauth-state') throw new Error('Invalid state type');
       return next();
     } catch {
-      return next(new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid or expired'));
+      return next(
+        new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid or expired'),
+      );
     }
   },
   passport.authenticate('google', {

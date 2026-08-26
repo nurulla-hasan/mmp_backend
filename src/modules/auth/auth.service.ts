@@ -1,13 +1,13 @@
 import bcrypt from 'bcryptjs';
 import httpStatus from 'http-status';
 import type { JwtPayload } from 'jsonwebtoken';
-import type { User } from '../../../generated/prisma/client';
+import { AuthProvider, type User } from '../../../generated/prisma/client';
 import { env } from '../../config/index.js';
-import { prisma } from '../../lib/prisma.js';
 import { sendVerificationEmail } from '../../lib/email.js';
+import { prisma } from '../../lib/prisma.js';
 import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
-import type { PublicUser, TokenPair } from './auth.types.js';
+import type { PublicUser, RegisterPayload, TokenPair } from './auth.types.js';
 import { otpService } from './otp.service.js';
 
 const toPublicUser = (user: User): PublicUser => ({
@@ -43,18 +43,20 @@ const assertActiveUser = (user: User | null): User => {
   return user;
 };
 
-const register = async (input: { name: string; email: string; password: string }) => {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+const register = async (payload: RegisterPayload) => {
+  const existing = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
   if (existing) throw new AppError(httpStatus.CONFLICT, 'This email already exists');
 
-  const passwordHash = await bcrypt.hash(input.password, 12);
+  const passwordHash = await bcrypt.hash(payload.password, 12);
   const otp = await otpService.createRegistration({
-    name: input.name,
-    email: input.email,
+    name: payload.name,
+    email: payload.email,
     passwordHash,
   });
-  await sendVerificationEmail(input.email, otp);
-  return { email: input.email };
+  await sendVerificationEmail(payload.email, otp);
+  return { email: payload.email };
 };
 
 const verifyEmail = async (email: string, otp: string) => {
@@ -67,7 +69,7 @@ const verifyEmail = async (email: string, otp: string) => {
       name: pendingUser.name,
       email: pendingUser.email,
       password: pendingUser.passwordHash,
-      authProvider: 'CREDENTIAL',
+      authProvider: AuthProvider.CREDENTIAL,
       emailVerified: true,
     },
   });
@@ -97,11 +99,7 @@ const refresh = async (refreshToken: string) => {
 };
 
 const createGoogleExchangeCode = (user: Pick<User, 'id'>): string =>
-  jwtUtils.createToken(
-    { id: user.id, type: 'oauth-exchange' },
-    env.JWT_ACCESS_SECRET,
-    '60s',
-  );
+  jwtUtils.createToken({ id: user.id, type: 'oauth-exchange' }, env.JWT_ACCESS_SECRET, '60s');
 
 const exchangeGoogleCode = async (code: string) => {
   let payload: JwtPayload;

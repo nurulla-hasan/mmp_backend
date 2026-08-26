@@ -28,9 +28,7 @@ const envSchema = z
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
-    GOOGLE_CALLBACK_URL: z
-      .url()
-      .default('http://localhost:5000/api/v1/auth/google/callback'),
+    GOOGLE_CALLBACK_URL: z.url().default('http://localhost:5000/api/v1/auth/google/callback'),
     REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
     OTP_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(300),
     OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
