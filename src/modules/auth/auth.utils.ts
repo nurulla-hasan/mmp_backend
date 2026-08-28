@@ -38,7 +38,14 @@ export const formatPublicUser = (user: User): IPublicUser => ({
   email: user.email,
   role: user.role,
   status: user.status,
-  imageUrl: user.imageUrl,
+  emailVerified: user.emailVerified,
+  isSubscribed: user.isSubscribed,
+  imageUrl: user.imageUrl ?? "",
+  phone: user.phone ?? "",
+  whatsappNumber: user.whatsappNumber ?? "",
+  district: user.district ?? "",
+  upazila: user.upazila ?? "",
+  createdAt: user.createdAt,
 });
 
 export const generateAuthResponse = (user: User): IAuthResponse => {
@@ -47,7 +54,8 @@ export const generateAuthResponse = (user: User): IAuthResponse => {
     name: user.name,
     email: user.email,
     role: user.role,
-    status: user.status
+    status: user.status,
+    isSubscribed: user.isSubscribed
   };
 
   const accessToken = jwtUtils.createToken(

@@ -10,7 +10,7 @@ import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
 
 import type { IAuthResponse, IRegisterUser } from './auth.types.js';
-import { ensureActiveUser, generateAuthResponse } from './auth.utils.js';
+import { ensureActiveUser, formatPublicUser, generateAuthResponse } from './auth.utils.js';
 import { otpService } from './otp.service.js';
 
 const loginUser = (user: User): IAuthResponse => {
@@ -137,6 +137,18 @@ const exchangeGoogleLoginCode = async (code: string): Promise<IAuthResponse> => 
   return generateAuthResponse(user);
 };
 
+const getMe = async (userId: string) => {
+  const rawUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!rawUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  return formatPublicUser(rawUser);
+};
+
 export const authService = {
   loginUser,
   registerUser,
@@ -145,4 +157,5 @@ export const authService = {
   refreshAuthTokens,
   createGoogleLoginCode,
   exchangeGoogleLoginCode,
+  getMe,
 };

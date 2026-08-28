@@ -9,8 +9,7 @@ declare global {
       email: string;
       role: Role;
       status: UserStatus;
-      emailVerified: boolean;
-      imageUrl: string;
+      isSubscribed: boolean;
     }
   }
 }

@@ -44,8 +44,8 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
         email: true,
         role: true,
         status: true,
+        isSubscribed: true,
         emailVerified: true,
-        imageUrl: true,
       },
     });
 
@@ -62,6 +62,13 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
         'You do not have permission to access this resource',
       );
     }
-    req.user = user;
+    req.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      isSubscribed: user.isSubscribed,
+    };
     next();
   });

@@ -1,10 +1,22 @@
+export interface IUserLocation {
+  district: string;
+  upazila: string;
+}
+
 export interface IPublicUser {
   id: string;
   name: string;
   email: string;
-  role: 'USER' | 'SURVEYOR' | 'ADMIN';
-  status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
+  role: "USER" | "SURVEYOR" | "ADMIN";
+  status: "ACTIVE" | "BLOCKED" | "DELETED";
+  emailVerified: boolean;
+  isSubscribed: boolean;
   imageUrl: string;
+  phone: string | null;
+  whatsappNumber: string | null;
+  district: string;
+  upazila: string;
+  createdAt: Date | string;
 }
 
 export interface IAuthTokens {

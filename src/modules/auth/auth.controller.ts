@@ -11,7 +11,7 @@ import { catchAsync } from '../../utils/catch-async.js';
 import { sendResponse } from '../../utils/send-response.js';
 
 import { authService } from './auth.service.js';
-import { clearAuthCookies, setAuthCookies } from './auth.utils.js';
+import { clearAuthCookies, formatPublicUser, setAuthCookies } from './auth.utils.js';
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(
@@ -172,16 +172,18 @@ const exchangeGoogleLoginCode = catchAsync(async (req, res) => {
   });
 });
 
-const getMe: RequestHandler = (req, res) => {
+const getMe: RequestHandler = catchAsync(async (req, res) => {
+  const user = await authService.getMe(req.user?.id as string);
+
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Current user retrieved',
     data: {
-      user: req.user,
+      user,
     },
   });
-};
+});
 
 const logoutUser: RequestHandler = (_req, res) => {
   clearAuthCookies(res);
