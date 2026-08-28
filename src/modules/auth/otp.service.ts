@@ -32,11 +32,7 @@ const savePendingUser = async (userData: IPendingUser): Promise<string> => {
     attempts: env.OTP_MAX_ATTEMPTS,
   };
 
-  await setCache(
-    getRegistrationKey(userData.email),
-    registrationData,
-    env.OTP_EXPIRES_IN_SECONDS,
-  );
+  await setCache(getRegistrationKey(userData.email), registrationData, env.OTP_EXPIRES_IN_SECONDS);
 
   return otp;
 };

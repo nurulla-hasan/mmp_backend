@@ -17,3 +17,7 @@ export interface IRegisterUser {
   email: string;
   password: string;
 }
+
+export interface IAuthResponse extends IAuthTokens {
+  user: IPublicUser;
+}

@@ -1,20 +1,21 @@
 import type { Request, RequestHandler } from 'express';
 import httpStatus from 'http-status';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
-import { Role } from '../../generated/prisma/enums';
+import type { Role } from '../../generated/prisma/enums';
 import { env } from '../config/index.js';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../utils/app-error.js';
 import { catchAsync } from '../utils/catch-async.js';
 import { jwtUtils } from '../utils/jwt.js';
 
-const validRoles = new Set<Role>(Object.values(Role));
 const getAccessToken = (req: Request): string | undefined => {
-  const authorization = req.headers.authorization;
-  return (
+  const token =
     req.cookies?.accessToken ??
-    (authorization?.startsWith('Bearer ') ? authorization.slice(7) : authorization)
-  );
+    (req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.split(' ')[1]
+      : req.headers.authorization);
+
+  return token ? token : undefined;
 };
 
 export const auth = (...allowedRoles: Role[]): RequestHandler =>
@@ -35,14 +36,6 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
       throw error;
     }
 
-    if (
-      decoded.type !== 'access' ||
-      typeof decoded.id !== 'string' ||
-      !validRoles.has(decoded.role as Role)
-    ) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'Access token is invalid');
-    }
-
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
@@ -55,11 +48,14 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
         imageUrl: true,
       },
     });
+
     if (!user) throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
     if (!user.emailVerified)
       throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified!');
     if (user.status !== 'ACTIVE')
       throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
+
+    // ROLE CHECK
     if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
       throw new AppError(
         httpStatus.FORBIDDEN,

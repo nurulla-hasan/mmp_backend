@@ -1,13 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from 'express';
 import httpStatus from 'http-status';
+import type { User } from '../../../generated/prisma/client';
+
 import { env } from '../../config/index.js';
 import { isGoogleAuthConfigured, passport } from '../../config/passport.js';
+
 import { AppError } from '../../utils/app-error.js';
 import { catchAsync } from '../../utils/catch-async.js';
-import { jwtUtils } from '../../utils/jwt.js';
 import { sendResponse } from '../../utils/send-response.js';
+
 import { authService } from './auth.service.js';
+import { clearAuthCookies, setAuthCookies } from './auth.utils.js';
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(
@@ -23,9 +27,7 @@ const loginUserWithPassport: RequestHandler = (req, res, next) => {
       }
 
       if (!user) {
-        return next(
-          new AppError(httpStatus.UNAUTHORIZED, info?.message ?? 'Login failed'),
-        );
+        return next(new AppError(httpStatus.UNAUTHORIZED, info?.message || 'Login failed'));
       }
 
       req.user = user;
@@ -39,16 +41,14 @@ const loginUser = catchAsync(async (req, res) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Login failed');
   }
 
-  const tokens = authService.createAuthTokens(req.user);
+  const result = authService.loginUser(req.user as User);
+  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Login successful',
-    data: {
-      user: req.user,
-      ...tokens,
-    },
+    data: result,
   });
 });
 
@@ -64,24 +64,21 @@ const registerUser = catchAsync(async (req, res) => {
 });
 
 const verifyEmail = catchAsync(async (req, res) => {
-  const result = await authService.verifyEmailAndCreateUser(
-    req.body.email,
-    req.body.otp,
-  );
+  const { email, otp } = req.body;
+  const result = await authService.verifyEmailAndCreateUser(email, otp);
+  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Email verification successful',
-    data: {
-      user: result.user,
-      ...result.tokens,
-    },
+    data: result,
   });
 });
 
 const resendVerificationOtp = catchAsync(async (req, res) => {
-  await authService.resendVerificationOtp(req.body.email);
+  const { email } = req.body;
+  await authService.resendVerificationOtp(email);
 
   sendResponse(res, {
     success: true,
@@ -92,43 +89,31 @@ const resendVerificationOtp = catchAsync(async (req, res) => {
 });
 
 const refreshAuthTokens = catchAsync(async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken ?? req.body.refreshToken;
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
   if (!refreshToken) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Refresh token is required');
   }
 
   const result = await authService.refreshAuthTokens(refreshToken);
+  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Tokens refreshed successfully',
-    data: {
-      user: result.user,
-      ...result.tokens,
-    },
+    data: result,
   });
 });
 
 const startGoogleLogin: RequestHandler = (req, res, next) => {
   if (!isGoogleAuthConfigured) {
     return next(
-      new AppError(
-        httpStatus.SERVICE_UNAVAILABLE,
-        'Google authentication is not configured',
-      ),
+      new AppError(httpStatus.SERVICE_UNAVAILABLE, 'Google authentication is not configured'),
     );
   }
 
-  const state = jwtUtils.createToken(
-    {
-      nonce: randomUUID(),
-      type: 'oauth-state',
-    },
-    env.JWT_ACCESS_SECRET,
-    '10m',
-  );
+  const state = randomUUID();
 
   res.cookie('oauthState', state, {
     httpOnly: true,
@@ -138,7 +123,7 @@ const startGoogleLogin: RequestHandler = (req, res, next) => {
     path: `${env.API_PREFIX}/auth/google/callback`,
   });
 
-  return passport.authenticate('google', {
+  passport.authenticate('google', {
     scope: ['profile', 'email'],
     session: false,
     state,
@@ -154,30 +139,10 @@ const verifyGoogleLoginState: RequestHandler = (req, res, next) => {
   });
 
   if (!stateFromGoogle || !stateFromCookie || stateFromGoogle !== stateFromCookie) {
-    return next(
-      new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid'),
-    );
+    return next(new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid'));
   }
 
-  try {
-    const tokenPayload = jwtUtils.verifyToken(
-      stateFromGoogle,
-      env.JWT_ACCESS_SECRET,
-    );
-
-    if (tokenPayload.type !== 'oauth-state') {
-      throw new Error('Invalid Google state type');
-    }
-
-    next();
-  } catch {
-    next(
-      new AppError(
-        httpStatus.UNAUTHORIZED,
-        'Google sign-in state is invalid or expired',
-      ),
-    );
-  }
+  next();
 };
 
 const googleLoginCallback: RequestHandler = (req, res) => {
@@ -185,24 +150,25 @@ const googleLoginCallback: RequestHandler = (req, res) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Google login failed');
   }
 
-  const googleLoginCode = authService.createGoogleLoginCode(req.user);
+  const googleLoginCode = authService.createGoogleLoginCode(req.user as User);
+
   const frontendCallbackUrl = new URL('/api/auth/google/callback', env.FRONTEND_URL);
 
   frontendCallbackUrl.searchParams.set('code', googleLoginCode);
+
   res.redirect(frontendCallbackUrl.toString());
 };
 
 const exchangeGoogleLoginCode = catchAsync(async (req, res) => {
-  const result = await authService.exchangeGoogleLoginCode(req.body.code);
+  const { code } = req.body;
+  const result = await authService.exchangeGoogleLoginCode(code);
+  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Google login successful',
-    data: {
-      user: result.user,
-      ...result.tokens,
-    },
+    data: result,
   });
 });
 
@@ -218,6 +184,8 @@ const getMe: RequestHandler = (req, res) => {
 };
 
 const logoutUser: RequestHandler = (_req, res) => {
+  clearAuthCookies(res);
+
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -227,16 +195,16 @@ const logoutUser: RequestHandler = (_req, res) => {
 };
 
 export const authController = {
-  exchangeGoogleLoginCode,
-  getMe,
-  googleLoginCallback,
   loginUser,
   loginUserWithPassport,
-  logoutUser,
-  refreshAuthTokens,
   registerUser,
-  resendVerificationOtp,
-  startGoogleLogin,
   verifyEmail,
+  resendVerificationOtp,
+  refreshAuthTokens,
+  startGoogleLogin,
   verifyGoogleLoginState,
+  googleLoginCallback,
+  exchangeGoogleLoginCode,
+  getMe,
+  logoutUser,
 };

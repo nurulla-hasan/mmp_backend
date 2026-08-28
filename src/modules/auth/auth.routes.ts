@@ -15,23 +15,11 @@ import {
 
 export const authRouter = Router();
 
-authRouter.post(
-  '/register',
-  validate(registerSchema),
-  authController.registerUser,
-);
+authRouter.post('/register', validate(registerSchema), authController.registerUser);
 
-authRouter.post(
-  '/verify-email',
-  validate(verifyEmailSchema),
-  authController.verifyEmail,
-);
+authRouter.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 
-authRouter.post(
-  '/resend-otp',
-  validate(resendOtpSchema),
-  authController.resendVerificationOtp,
-);
+authRouter.post('/resend-otp', validate(resendOtpSchema), authController.resendVerificationOtp);
 
 authRouter.post(
   '/login',
@@ -40,11 +28,7 @@ authRouter.post(
   authController.loginUser,
 );
 
-authRouter.post(
-  '/refresh-token',
-  validate(refreshSchema),
-  authController.refreshAuthTokens,
-);
+authRouter.post('/refresh-token', validate(refreshSchema), authController.refreshAuthTokens);
 
 authRouter.post(
   '/google/exchange',

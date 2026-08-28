@@ -2,9 +2,9 @@ import bcrypt from 'bcryptjs';
 import passport from 'passport';
 import { Strategy as GoogleStrategy, type Profile } from 'passport-google-oauth20';
 import { Strategy as LocalStrategy } from 'passport-local';
+import { AuthProvider } from '../../generated/prisma/enums.js';
 import { prisma } from '../lib/prisma.js';
 import { env } from './index.js';
-import { AuthProvider } from '../../generated/prisma/enums.js';
 
 passport.use(
   new LocalStrategy(
@@ -24,7 +24,7 @@ passport.use(
 
         if (!user || !user.password) {
           return done(null, false, {
-            message: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।',
+            message: 'Invalid email or password.',
           });
         }
 
@@ -33,20 +33,20 @@ passport.use(
 
         if (!isPasswordMatched) {
           return done(null, false, {
-            message: 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।',
+            message: 'Invalid email or password.',
           });
         }
 
         // Step 3: Make sure the account is active and verified.
         if (user.status !== 'ACTIVE') {
           return done(null, false, {
-            message: 'আপনার অ্যাকাউন্টটি ব্যবহারযোগ্য নয়।',
+            message: 'Your account is unavailable.',
           });
         }
 
         if (!user.emailVerified) {
           return done(null, false, {
-            message: 'আপনার ইমেইল ভেরিফাই করুন।',
+            message: 'Please verify your email.',
           });
         }
 
@@ -58,9 +58,7 @@ passport.use(
   ),
 );
 
-export const isGoogleAuthConfigured = Boolean(
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
-);
+export const isGoogleAuthConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   passport.use(
