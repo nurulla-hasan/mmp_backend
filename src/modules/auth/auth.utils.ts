@@ -1,5 +1,5 @@
 import type { CookieOptions, Response } from "express";
-import { env } from "../../config/index.js";
+import { env } from "../../config/index";
 import { IAuthTokens } from "./auth.types";
 
 const isProduction = env.NODE_ENV === "production";

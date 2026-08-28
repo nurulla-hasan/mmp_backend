@@ -349,6 +349,129 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Get Active Services",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "active"]
+            },
+            "description": "Get all active service categories. Public — used by the surveyor profile form."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Services (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "description": "Get all services (including inactive). Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Service By Slug",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "land-measurement"]
+            },
+            "description": "Get a single service by its slug. Public."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Service (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"land-measurement\",\n  \"name\": \"Land Measurement\",\n  \"description\": \"Professional land measuring service.\",\n  \"startingPrice\": 500,\n  \"isActive\": true\n}"
+            },
+            "description": "Create a new service category. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Service (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "land-measurement"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startingPrice\": 600,\n  \"isActive\": true\n}"
+            },
+            "description": "Update a service category by slug. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Service (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "land-measurement"]
+            },
+            "description": "Delete a service category by slug. Admin only."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

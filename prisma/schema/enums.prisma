@@ -18,3 +18,9 @@ enum UserStatus {
   ACTIVE
   BLOCKED
 }
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

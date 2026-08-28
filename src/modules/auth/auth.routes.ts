@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { env } from "../../config/index.js";
-import { passport } from "../../config/passport.js";
-import { auth } from "../../middlewares/auth.js";
-import { validate } from "../../middlewares/validate.js";
-import { authController } from "./auth.controller.js";
+import { env } from "../../config/index";
+import { passport } from "../../config/passport";
+import { auth } from "../../middlewares/auth";
+import { validate } from "../../middlewares/validate";
+import { authController } from "./auth.controller";
 import {
   exchangeSchema,
   loginSchema,
@@ -11,7 +11,7 @@ import {
   registerSchema,
   resendOtpSchema,
   verifyEmailSchema,
-} from "./auth.validation.js";
+} from "./auth.validation";
 
 export const authRouter = Router();
 

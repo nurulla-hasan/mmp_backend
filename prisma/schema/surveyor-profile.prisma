@@ -1,0 +1,30 @@
+model SurveyorProfile {
+    id     String @id @default(uuid())
+    userId String @unique @map("user_id")
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    slug     String  @unique @map("slug")
+    headline String
+    bio      String?
+
+    experienceYears Int @default(0) @map("experience_years")
+
+    certificateUrl String? @map("certificate_url")
+
+    verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+    isVerified         Boolean            @default(false) @map("is_verified")
+    verifiedAt         DateTime?          @map("verified_at")
+    adminNote          String?            @map("admin_note")
+
+    rating       Float @default(0)
+    totalReviews Int   @default(0) @map("total_reviews")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    services     String[]         @default([])
+    serviceAreas ServiceArea[]
+    reviews      SurveyorReview[]
+
+    @@map("surveyor_profiles")
+}

@@ -1,0 +1,11 @@
+model ServiceArea {
+  id                String   @id @default(uuid())
+  surveyorProfileId String   @map("surveyor_profile_id")
+  district          String
+  upazilas          String[] @default([])
+
+  surveyorProfile SurveyorProfile @relation(fields: [surveyorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([surveyorProfileId])
+  @@map("service_areas")
+}

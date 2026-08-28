@@ -3,14 +3,14 @@ import httpStatus from 'http-status';
 import type { JwtPayload } from 'jsonwebtoken';
 import { AuthProvider, type User } from '../../../generated/prisma/client';
 
-import { env } from '../../config/index.js';
-import { sendVerificationEmail } from '../../lib/email.js';
-import { prisma } from '../../lib/prisma.js';
-import { AppError } from '../../utils/app-error.js';
-import { jwtUtils } from '../../utils/jwt.js';
+import { env } from '../../config/index';
+import { sendVerificationEmail } from '../../lib/email';
+import { prisma } from '../../lib/prisma';
+import { AppError } from '../../utils/app-error';
+import { jwtUtils } from '../../utils/jwt';
 
-import type { IRegisterUser } from './auth.types.js';
-import { otpService } from './otp.service.js';
+import type { IRegisterUser } from './auth.types';
+import { otpService } from './otp.service';
 
 const loginUser = (user: User) => {
   const jwtPayload = {

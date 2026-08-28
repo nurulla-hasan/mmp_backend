@@ -3,15 +3,15 @@ import type { RequestHandler } from 'express';
 import httpStatus from 'http-status';
 import type { User } from '../../../generated/prisma/client';
 
-import { env } from '../../config/index.js';
-import { isGoogleAuthConfigured, passport } from '../../config/passport.js';
+import { env } from '../../config/index';
+import { isGoogleAuthConfigured, passport } from '../../config/passport';
 
-import { AppError } from '../../utils/app-error.js';
-import { catchAsync } from '../../utils/catch-async.js';
-import { sendResponse } from '../../utils/send-response.js';
+import { AppError } from '../../utils/app-error';
+import { catchAsync } from '../../utils/catch-async';
+import { sendResponse } from '../../utils/send-response';
 
-import { authService } from './auth.service.js';
-import { clearAuthCookies, setAuthCookies } from './auth.utils.js';
+import { authService } from './auth.service';
+import { clearAuthCookies, setAuthCookies } from './auth.utils';
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(
