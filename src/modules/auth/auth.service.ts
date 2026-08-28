@@ -10,7 +10,6 @@ import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
 
 import type { IRegisterUser } from './auth.types.js';
-import { ensureActiveUser } from './auth.utils.js';
 import { otpService } from './otp.service.js';
 
 const loginUser = (user: User) => {
@@ -155,7 +154,14 @@ const refreshAuthTokens = async (refreshToken: string) => {
     where: { id: tokenPayload.id },
   });
 
-  const user = ensureActiveUser(rawUser);
+  if (!rawUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (rawUser.status !== 'ACTIVE') {
+    throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
+  }
+
+  const user = rawUser;
 
   if (!user.emailVerified) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified');
@@ -222,7 +228,14 @@ const exchangeGoogleLoginCode = async (code: string) => {
     where: { id: tokenPayload.id },
   });
 
-  const user = ensureActiveUser(rawUser);
+  if (!rawUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (rawUser.status !== 'ACTIVE') {
+    throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
+  }
+
+  const user = rawUser;
 
   const jwtPayload = {
     id: user.id,
