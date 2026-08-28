@@ -26,21 +26,6 @@ const loginUser = (user: User) => {
   const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
 
   return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerified,
-      isSubscribed: user.isSubscribed,
-      imageUrl: user.imageUrl ,
-      phone: user.phone ,
-      whatsappNumber: user.whatsappNumber ,
-      district: user.district ,
-      upazila: user.upazila ,
-      createdAt: user.createdAt,
-    },
     accessToken,
     refreshToken,
   };
@@ -107,21 +92,6 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
   const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
 
   return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerified,
-      isSubscribed: user.isSubscribed,
-      imageUrl: user.imageUrl,
-      phone: user.phone,
-      whatsappNumber: user.whatsappNumber,
-      district: user.district,
-      upazila: user.upazila,
-      createdAt: user.createdAt,
-    },
     accessToken,
     refreshToken,
   };
@@ -180,21 +150,6 @@ const refreshAuthTokens = async (refreshToken: string) => {
   const newRefreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
 
   return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerified,
-      isSubscribed: user.isSubscribed,
-      imageUrl: user.imageUrl,
-      phone: user.phone,
-      whatsappNumber: user.whatsappNumber,
-      district: user.district,
-      upazila: user.upazila,
-      createdAt: user.createdAt,
-    },
     accessToken,
     refreshToken: newRefreshToken,
   };
@@ -250,50 +205,27 @@ const exchangeGoogleLoginCode = async (code: string) => {
   const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
 
   return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerified,
-      isSubscribed: user.isSubscribed,
-      imageUrl: user.imageUrl,
-      phone: user.phone,
-      whatsappNumber: user.whatsappNumber,
-      district: user.district,
-      upazila: user.upazila,
-      createdAt: user.createdAt,
-    },
     accessToken,
     refreshToken,
   };
 };
 
 const getMe = async (userId: string) => {
-  const rawUser = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
+    omit: {
+      password: true,
+      googleId: true,
+      imagePublicId: true,
+      authProvider: true,
+    },
   });
 
-  if (!rawUser) {
+  if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  return {
-    id: rawUser.id,
-    name: rawUser.name,
-    email: rawUser.email,
-    role: rawUser.role,
-    status: rawUser.status,
-    emailVerified: rawUser.emailVerified,
-    isSubscribed: rawUser.isSubscribed,
-    imageUrl: rawUser.imageUrl,
-    phone: rawUser.phone,
-    whatsappNumber: rawUser.whatsappNumber,
-    district: rawUser.district,
-    upazila: rawUser.upazila,
-    createdAt: rawUser.createdAt,
-  };
+  return user;
 };
 
 export const authService = {

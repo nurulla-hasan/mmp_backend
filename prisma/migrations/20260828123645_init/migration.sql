@@ -8,7 +8,7 @@ CREATE TYPE "ActiveStatus" AS ENUM ('ACTIVE', 'BLOCKED');
 CREATE TYPE "AuthProvider" AS ENUM ('GOOGLE', 'CREDENTIAL');
 
 -- CreateEnum
-CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'BLOCKED', 'DELETED');
+CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'BLOCKED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -17,12 +17,17 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password" TEXT,
     "googleId" TEXT,
-    "authProvider" "AuthProvider" NOT NULL DEFAULT 'CREDENTIAL',
-    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "auth_provider" "AuthProvider" NOT NULL DEFAULT 'CREDENTIAL',
+    "email_verified" BOOLEAN NOT NULL DEFAULT false,
     "role" "Role" NOT NULL DEFAULT 'USER',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
-    "imageUrl" TEXT NOT NULL DEFAULT '',
-    "imagePublicId" TEXT NOT NULL DEFAULT '',
+    "image_url" TEXT NOT NULL DEFAULT '',
+    "image_public_id" TEXT NOT NULL DEFAULT '',
+    "is_subscribed" BOOLEAN NOT NULL DEFAULT false,
+    "phone" TEXT NOT NULL DEFAULT '',
+    "whatsapp_number" TEXT NOT NULL DEFAULT '',
+    "district" TEXT NOT NULL DEFAULT '',
+    "upazila" TEXT NOT NULL DEFAULT '',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

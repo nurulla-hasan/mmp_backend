@@ -41,7 +41,7 @@ const loginUser = catchAsync(async (req, res) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Login failed');
   }
 
-  const result = authService.loginUser(req.user as User);
+  const result = authService.loginUser(req.user as unknown as User);
   setAuthCookies(res, result);
 
   sendResponse(res, {
@@ -150,7 +150,7 @@ const googleLoginCallback: RequestHandler = (req, res) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Google login failed');
   }
 
-  const googleLoginCode = authService.createGoogleLoginCode(req.user as User);
+  const googleLoginCode = authService.createGoogleLoginCode(req.user as unknown as User);
 
   const frontendCallbackUrl = new URL('/api/auth/google/callback', env.FRONTEND_URL);
 

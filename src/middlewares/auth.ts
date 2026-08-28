@@ -49,7 +49,9 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
       },
     });
 
-    if (!user) throw new AppError(httpStatus.UNAUTHORIZED, 'User not found');
+    if (!user) {
+      return next(new AppError(httpStatus.UNAUTHORIZED, 'User not found'));
+    }
     if (!user.emailVerified)
       throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified!');
     if (user.status !== 'ACTIVE')

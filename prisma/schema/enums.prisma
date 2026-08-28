@@ -9,7 +9,6 @@ enum ActiveStatus {
   BLOCKED
 }
 
-
 enum AuthProvider {
   GOOGLE
   CREDENTIAL
@@ -18,5 +17,4 @@ enum AuthProvider {
 enum UserStatus {
   ACTIVE
   BLOCKED
-  DELETED
 }

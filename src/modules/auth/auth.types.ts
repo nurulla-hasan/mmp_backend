@@ -1,7 +1,3 @@
-export interface IUserLocation {
-  district: string;
-  upazila: string;
-}
 
 export interface IAuthTokens {
   accessToken: string;

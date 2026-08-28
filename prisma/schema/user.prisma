@@ -3,20 +3,20 @@ model User {
   name           String
   email          String
   password       String?
-  googleId       String?      @unique
-  authProvider   AuthProvider @default(CREDENTIAL)
-  emailVerified  Boolean      @default(false)
+  googleId       String?      @unique @map("google_id")
+  authProvider   AuthProvider @default(CREDENTIAL) @map("auth_provider")
+  emailVerified  Boolean      @default(false) @map("email_verified")
   role           Role         @default(USER)
   status         UserStatus   @default(ACTIVE)
-  imageUrl       String       @default("")
-  imagePublicId  String       @default("")
-  isSubscribed   Boolean      @default(false)
+  imageUrl       String       @default("") @map("image_url")
+  imagePublicId  String       @default("") @map("image_public_id")
+  isSubscribed   Boolean      @default(false) @map("is_subscribed")
   phone          String       @default("")
-  whatsappNumber String       @default("")
+  whatsappNumber String       @default("") @map("whatsapp_number")
   district       String       @default("")
   upazila        String       @default("")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
   @@unique([email])
   @@map("users")
