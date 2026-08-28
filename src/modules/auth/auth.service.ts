@@ -9,12 +9,42 @@ import { prisma } from '../../lib/prisma.js';
 import { AppError } from '../../utils/app-error.js';
 import { jwtUtils } from '../../utils/jwt.js';
 
-import type { IAuthResponse, IRegisterUser } from './auth.types.js';
-import { ensureActiveUser, formatPublicUser, generateAuthResponse } from './auth.utils.js';
+import type { IRegisterUser } from './auth.types.js';
+import { ensureActiveUser } from './auth.utils.js';
 import { otpService } from './otp.service.js';
 
-const loginUser = (user: User): IAuthResponse => {
-  return generateAuthResponse(user);
+const loginUser = (user: User) => {
+  const jwtPayload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    isSubscribed: user.isSubscribed,
+  };
+
+  const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);
+  const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      isSubscribed: user.isSubscribed,
+      imageUrl: user.imageUrl ,
+      phone: user.phone ,
+      whatsappNumber: user.whatsappNumber ,
+      district: user.district ,
+      upazila: user.upazila ,
+      createdAt: user.createdAt,
+    },
+    accessToken,
+    refreshToken,
+  };
 };
 
 const registerUser = async (payload: IRegisterUser): Promise<{ email: string }> => {
@@ -41,7 +71,7 @@ const registerUser = async (payload: IRegisterUser): Promise<{ email: string }> 
   return { email };
 };
 
-const verifyEmailAndCreateUser = async (email: string, otp: string): Promise<IAuthResponse> => {
+const verifyEmailAndCreateUser = async (email: string, otp: string) => {
   const pendingUser = await otpService.verifyRegistrationOtp(email, otp);
 
   const existingUser = await prisma.user.findUnique({
@@ -65,7 +95,37 @@ const verifyEmailAndCreateUser = async (email: string, otp: string): Promise<IAu
   // Delete pending user data from Redis after user is created in database
   await otpService.deletePendingUser(email);
 
-  return generateAuthResponse(user);
+  const jwtPayload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    isSubscribed: user.isSubscribed,
+  };
+
+  const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);
+  const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      isSubscribed: user.isSubscribed,
+      imageUrl: user.imageUrl,
+      phone: user.phone,
+      whatsappNumber: user.whatsappNumber,
+      district: user.district,
+      upazila: user.upazila,
+      createdAt: user.createdAt,
+    },
+    accessToken,
+    refreshToken,
+  };
 };
 
 const resendVerificationOtp = async (email: string): Promise<void> => {
@@ -82,7 +142,7 @@ const resendVerificationOtp = async (email: string): Promise<void> => {
   await sendVerificationEmail(email, newOtp);
 };
 
-const refreshAuthTokens = async (refreshToken: string): Promise<IAuthResponse> => {
+const refreshAuthTokens = async (refreshToken: string) => {
   let tokenPayload: JwtPayload;
 
   try {
@@ -101,7 +161,37 @@ const refreshAuthTokens = async (refreshToken: string): Promise<IAuthResponse> =
     throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified');
   }
 
-  return generateAuthResponse(user);
+  const jwtPayload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    isSubscribed: user.isSubscribed,
+  };
+
+  const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);
+  const newRefreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      isSubscribed: user.isSubscribed,
+      imageUrl: user.imageUrl,
+      phone: user.phone,
+      whatsappNumber: user.whatsappNumber,
+      district: user.district,
+      upazila: user.upazila,
+      createdAt: user.createdAt,
+    },
+    accessToken,
+    refreshToken: newRefreshToken,
+  };
 };
 
 const createGoogleLoginCode = (user: User): string => {
@@ -115,7 +205,7 @@ const createGoogleLoginCode = (user: User): string => {
   );
 };
 
-const exchangeGoogleLoginCode = async (code: string): Promise<IAuthResponse> => {
+const exchangeGoogleLoginCode = async (code: string) => {
   let tokenPayload: JwtPayload;
 
   try {
@@ -134,7 +224,37 @@ const exchangeGoogleLoginCode = async (code: string): Promise<IAuthResponse> => 
 
   const user = ensureActiveUser(rawUser);
 
-  return generateAuthResponse(user);
+  const jwtPayload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    isSubscribed: user.isSubscribed,
+  };
+
+  const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);
+  const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      isSubscribed: user.isSubscribed,
+      imageUrl: user.imageUrl,
+      phone: user.phone,
+      whatsappNumber: user.whatsappNumber,
+      district: user.district,
+      upazila: user.upazila,
+      createdAt: user.createdAt,
+    },
+    accessToken,
+    refreshToken,
+  };
 };
 
 const getMe = async (userId: string) => {
@@ -146,7 +266,21 @@ const getMe = async (userId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  return formatPublicUser(rawUser);
+  return {
+    id: rawUser.id,
+    name: rawUser.name,
+    email: rawUser.email,
+    role: rawUser.role,
+    status: rawUser.status,
+    emailVerified: rawUser.emailVerified,
+    isSubscribed: rawUser.isSubscribed,
+    imageUrl: rawUser.imageUrl,
+    phone: rawUser.phone,
+    whatsappNumber: rawUser.whatsappNumber,
+    district: rawUser.district,
+    upazila: rawUser.upazila,
+    createdAt: rawUser.createdAt,
+  };
 };
 
 export const authService = {

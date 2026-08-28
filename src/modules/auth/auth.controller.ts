@@ -11,7 +11,7 @@ import { catchAsync } from '../../utils/catch-async.js';
 import { sendResponse } from '../../utils/send-response.js';
 
 import { authService } from './auth.service.js';
-import { clearAuthCookies, formatPublicUser, setAuthCookies } from './auth.utils.js';
+import { clearAuthCookies, setAuthCookies } from './auth.utils.js';
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(

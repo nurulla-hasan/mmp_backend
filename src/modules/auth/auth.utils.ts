@@ -3,8 +3,7 @@ import httpStatus from "http-status";
 import type { User } from "../../../generated/prisma/client";
 import { env } from "../../config/index.js";
 import { AppError } from "../../utils/app-error.js";
-import { jwtUtils } from "../../utils/jwt.js";
-import type { IAuthResponse, IAuthTokens, IPublicUser } from "./auth.types.js";
+import { IAuthTokens } from "./auth.types";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -30,51 +29,6 @@ export const setAuthCookies = (res: Response, tokens: IAuthTokens): void => {
 export const clearAuthCookies = (res: Response): void => {
   res.clearCookie("accessToken", baseCookieOptions);
   res.clearCookie("refreshToken", baseCookieOptions);
-};
-
-export const formatPublicUser = (user: User): IPublicUser => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  role: user.role,
-  status: user.status,
-  emailVerified: user.emailVerified,
-  isSubscribed: user.isSubscribed,
-  imageUrl: user.imageUrl ?? "",
-  phone: user.phone ?? "",
-  whatsappNumber: user.whatsappNumber ?? "",
-  district: user.district ?? "",
-  upazila: user.upazila ?? "",
-  createdAt: user.createdAt,
-});
-
-export const generateAuthResponse = (user: User): IAuthResponse => {
-  const jwtPayload = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    status: user.status,
-    isSubscribed: user.isSubscribed
-  };
-
-  const accessToken = jwtUtils.createToken(
-    jwtPayload,
-    env.JWT_ACCESS_SECRET,
-    env.JWT_ACCESS_EXPIRES_IN,
-  );
-
-  const refreshToken = jwtUtils.createToken(
-    jwtPayload,
-    env.JWT_REFRESH_SECRET,
-    env.JWT_REFRESH_EXPIRES_IN,
-  );
-
-  return {
-    user: formatPublicUser(user),
-    accessToken,
-    refreshToken,
-  };
 };
 
 export const ensureActiveUser = (user: User | null): User => {
