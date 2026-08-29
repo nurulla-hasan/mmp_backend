@@ -1,14 +1,16 @@
 import { createServer } from 'node:http';
-import { app } from './app.js';
-import { env } from './config/index.js';
-import { prisma } from './lib/prisma.js';
-import { ensureRedisConnected, redisClient } from './lib/redis.js';
+import { app } from './app';
+import { env } from './config/index';
+import { prisma } from './lib/prisma';
+import { seedAdmin } from './lib/seed';
+import { ensureRedisConnected, redisClient } from './lib/redis';
 
 const server = createServer(app);
 let shuttingDown = false;
 async function main() {
   try {
     await prisma.$connect();
+    await seedAdmin();
     await ensureRedisConnected();
     server.listen(env.PORT, env.HOST, () =>
       console.log(`Server started on ${env.HOST}:${env.PORT}`),

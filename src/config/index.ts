@@ -37,6 +37,9 @@ const envSchema = z
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
     MAIL_FROM: z.string().default('Mouza Map Pro <no-reply@example.com>'),
+    ADMIN_EMAIL: z.string().default('admin@mouzamappro.com'),
+    ADMIN_NAME: z.string().default('System Admin'),
+    ADMIN_PASSWORD: z.string().default('11111111'),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production') {
