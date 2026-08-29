@@ -32,9 +32,16 @@ export const updateMeSchema = z.object({
   name: z.string().trim().min(2, "Name is too short.").max(100).optional(),
   phone: z
     .string()
+    .trim()
     .regex(/^01[3-9]\d{8}$/, "Invalid phone number.")
+    .or(z.literal(""))
     .optional(),
-  whatsappNumber: z.string().optional(),
+  whatsappNumber: z
+    .string()
+    .trim()
+    .regex(/^01[3-9]\d{8}$/, "Invalid WhatsApp number.")
+    .or(z.literal(""))
+    .optional(),
   district: z.string().optional(),
   upazila: z.string().optional(),
 });

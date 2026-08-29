@@ -20,7 +20,9 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx -e \"import('./src/lib/seed.ts').then(m => m.seedSurveyor()).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); })\"",
+    "db:seed:reset": "tsx -e \"import('./src/lib/seed.ts').then(m => m.resetAndSeedAll()).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); })\""
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
