@@ -717,9 +717,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/surveyor/services/my",
+              "raw": "{{baseUrl}}/api/v1/surveyor/services",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "surveyor", "services", "my"]
+              "path": ["api", "v1", "surveyor", "services"]
             },
             "description": "Get all services and custom starting prices configured by the logged-in surveyor."
           }
@@ -806,6 +806,197 @@
               ]
             },
             "description": "Delete/remove an assigned service from the surveyor's profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Land Measurement & Saved Calculations",
+      "description": "Endpoints to manage saved land measurement calculations, polygon plot coordinates, and measurement activity statistics.",
+      "item": [
+        {
+          "name": "Get My Calculations (List, Search & Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations?searchTerm=Monipur&page=1&limit=10&sortBy=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations"],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "Monipur",
+                  "description": "Optional search query by calculation name or map name"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort order: newest | oldest | name_asc | name_desc"
+                }
+              ]
+            },
+            "description": "Retrieve a paginated list of the logged-in user's saved calculations with search and sort support."
+          }
+        },
+        {
+          "name": "Create Calculation (Save Measurement & Plots)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monipur 202 - Dag 142\",\n  \"mapName\": \"202 Monipur.pdf\",\n  \"scaleType\": \"link\",\n  \"scalePxPerUnit\": 2.305,\n  \"imageWidth\": 3508,\n  \"imageHeight\": 2480,\n  \"plots\": [\n    {\n      \"plotNumber\": \"Plot 1\",\n      \"points\": [\n        {\"x\": 100, \"y\": 150},\n        {\"x\": 350, \"y\": 150},\n        {\"x\": 380, \"y\": 400},\n        {\"x\": 120, \"y\": 420}\n      ],\n      \"areaSqLink\": 14500,\n      \"areaShotok\": 14.5,\n      \"areaKatha\": 8.78\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations"]
+            },
+            "description": "Save a new land measurement calculation and its polygon plots to the user's account."
+          }
+        },
+        {
+          "name": "Get Calculation by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "calculation-uuid-here",
+                  "description": "Calculation record ID"
+                }
+              ]
+            },
+            "description": "Retrieve full details and plot points of a single saved calculation."
+          }
+        },
+        {
+          "name": "Update Calculation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monipur 202 - Dag 142 (Updated)\",\n  \"mapName\": \"202 Monipur.pdf\",\n  \"scaleType\": \"link\",\n  \"scalePxPerUnit\": 2.305,\n  \"plots\": [\n    {\n      \"plotNumber\": \"Plot 1\",\n      \"points\": [\n        {\"x\": 100, \"y\": 150},\n        {\"x\": 350, \"y\": 150},\n        {\"x\": 380, \"y\": 400},\n        {\"x\": 120, \"y\": 420}\n      ],\n      \"areaSqLink\": 14500,\n      \"areaShotok\": 14.5,\n      \"areaKatha\": 8.78\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "calculation-uuid-here",
+                  "description": "Calculation record ID"
+                }
+              ]
+            },
+            "description": "Update the name, scale, map reference, or plot geometry of an existing calculation."
+          }
+        },
+        {
+          "name": "Delete Calculation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "calculation-uuid-here",
+                  "description": "Calculation record ID"
+                }
+              ]
+            },
+            "description": "Permanently delete a saved calculation and its associated plot records."
+          }
+        },
+        {
+          "name": "Get My Measurement Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations/stats/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations", "stats", "me"]
+            },
+            "description": "Get total plots completed, calculations count, and last measurement activity timestamp for the logged-in user."
+          }
+        },
+        {
+          "name": "Get All Measurement Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/calculations/stats/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "calculations", "stats", "all"]
+            },
+            "description": "Admin only endpoint to view measurement activity statistics across all users."
           }
         }
       ]

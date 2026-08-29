@@ -9,20 +9,31 @@ import {
 
 export const surveyorServiceRouter = Router();
 
+// All routes in this module require SURVEYOR role
 surveyorServiceRouter.use(auth("SURVEYOR"));
 
-surveyorServiceRouter
-  .route("/")
-  .get(surveyorServiceController.getMyServices)
-  .post(
-    validate(addSurveyorServiceSchema),
-    surveyorServiceController.addService,
-  );
+// 1. Get all services for logged-in surveyor
+surveyorServiceRouter.get(
+  "/",
+  surveyorServiceController.getMyServices,
+);
 
-surveyorServiceRouter
-  .route("/:id")
-  .patch(
-    validate(updateSurveyorServiceSchema),
-    surveyorServiceController.updateServicePrice,
-  )
-  .delete(surveyorServiceController.removeService);
+// 2. Add a new service to surveyor profile
+surveyorServiceRouter.post(
+  "/",
+  validate(addSurveyorServiceSchema),
+  surveyorServiceController.addService,
+);
+
+// 3. Update starting price of an assigned service
+surveyorServiceRouter.patch(
+  "/:id",
+  validate(updateSurveyorServiceSchema),
+  surveyorServiceController.updateServicePrice,
+);
+
+// 4. Remove assigned service from profile
+surveyorServiceRouter.delete(
+  "/:id",
+  surveyorServiceController.removeService,
+);

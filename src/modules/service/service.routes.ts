@@ -9,7 +9,13 @@ import {
 
 export const serviceRouter = Router();
 
-// Admin only
+// 1. Get all services (Public)
+serviceRouter.get(
+  "/",
+  serviceController.getAllServices,
+);
+
+// 2. Create service (Admin only)
 serviceRouter.post(
   "/",
   auth("ADMIN"),
@@ -17,9 +23,7 @@ serviceRouter.post(
   serviceController.createService,
 );
 
-// Public: সার্ভিস লিস্ট (id + slug + name) সবাই দেখতে পারবে
-serviceRouter.get("/", serviceController.getAllServices);
-
+// 3. Update service (Admin only)
 serviceRouter.patch(
   "/:slug",
   auth("ADMIN"),
@@ -27,4 +31,9 @@ serviceRouter.patch(
   serviceController.updateService,
 );
 
-serviceRouter.delete("/:slug", auth("ADMIN"), serviceController.deleteService);
+// 4. Delete service (Admin only)
+serviceRouter.delete(
+  "/:slug",
+  auth("ADMIN"),
+  serviceController.deleteService,
+);

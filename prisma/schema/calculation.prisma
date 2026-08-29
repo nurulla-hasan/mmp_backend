@@ -1,0 +1,18 @@
+model Calculation {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  name           String
+  mapName        String?  @map("map_name")
+  scaleType      String   @default("link") @map("scale_type")
+  scalePxPerUnit Float?   @map("scale_px_per_unit")
+  imageWidth     Int?     @map("image_width")
+  imageHeight    Int?     @map("image_height")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plots Plot[]
+
+  @@map("calculations")
+}
+

@@ -1,26 +1,19 @@
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { districtService } from "./district.service";
-import {
-  createDistrictSchema,
-  createUpazilaSchema,
-  updateDistrictSchema,
-  updateUpazilaSchema,
-} from "./district.validation";
 
 const getAllDistricts = catchAsync(async (_req, res) => {
   const result = await districtService.getAllDistricts();
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "All districts retrieved.",
+    message: "All districts retrieved successfully.",
     data: result,
   });
 });
 
 const createDistrict = catchAsync(async (req, res) => {
-  const payload = createDistrictSchema.parse(req.body);
-  const result = await districtService.createDistrict(payload);
+  const result = await districtService.createDistrict(req.body);
   sendResponse(res, {
     statusCode: 201,
     success: true,
@@ -30,8 +23,7 @@ const createDistrict = catchAsync(async (req, res) => {
 });
 
 const updateDistrict = catchAsync(async (req, res) => {
-  const payload = updateDistrictSchema.parse(req.body);
-  const result = await districtService.updateDistrict(String(req.params.id), payload);
+  const result = await districtService.updateDistrict(String(req.params.id), req.body);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -51,8 +43,7 @@ const deleteDistrict = catchAsync(async (req, res) => {
 });
 
 const createUpazila = catchAsync(async (req, res) => {
-  const payload = createUpazilaSchema.parse(req.body);
-  const result = await districtService.createUpazila(payload);
+  const result = await districtService.createUpazila(req.body);
   sendResponse(res, {
     statusCode: 201,
     success: true,
@@ -62,8 +53,7 @@ const createUpazila = catchAsync(async (req, res) => {
 });
 
 const updateUpazila = catchAsync(async (req, res) => {
-  const payload = updateUpazilaSchema.parse(req.body);
-  const result = await districtService.updateUpazila(String(req.params.id), payload);
+  const result = await districtService.updateUpazila(String(req.params.id), req.body);
   sendResponse(res, {
     statusCode: 200,
     success: true,

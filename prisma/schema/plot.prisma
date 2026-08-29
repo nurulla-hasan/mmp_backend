@@ -1,0 +1,15 @@
+model Plot {
+  id            String   @id @default(uuid())
+  calculationId String   @map("calculation_id")
+  plotNumber    String   @map("plot_number")
+  points        Json
+  areaSqLink    Decimal  @default(0) @map("area_sq_link")
+  areaShotok    Decimal  @default(0) @map("area_shotok")
+  areaKatha     Decimal  @default(0) @map("area_katha")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  calculation Calculation @relation(fields: [calculationId], references: [id], onDelete: Cascade)
+
+  @@map("plots")
+}
+

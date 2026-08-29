@@ -19,6 +19,8 @@ model User {
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   surveyorProfile SurveyorProfile?
+  calculations    Calculation[]
+  measurementStat UserMeasurementStat?
 
   @@unique([email])
   @@map("users")

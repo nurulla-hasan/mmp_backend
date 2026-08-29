@@ -1,0 +1,13 @@
+model UserMeasurementStat {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  plotsCompleted    Int      @default(0) @map("plots_completed")
+  calculationsCount Int      @default(0) @map("calculations_count")
+  lastActivityAt    DateTime @default(now()) @map("last_activity_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_measurement_stats")
+}
+
