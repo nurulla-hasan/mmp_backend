@@ -12,6 +12,7 @@ export const surveyorProfileRouter = Router();
 
 surveyorProfileRouter.post(
   "/profile",
+  auth("USER"),
   validate(applyAsSurveyorSchema),
   surveyorProfileController.applyAsSurveyor,
 );

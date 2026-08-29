@@ -66,6 +66,7 @@ const applyAsSurveyor = async (userId: string, payload: ApplyAsSurveyorInput) =>
       headline: payload.headline,
       bio: payload.bio,
       experienceYears: payload.experienceYears,
+      certificateUrl: payload.certificateUrl,
       serviceAreas: { create: payload.serviceAreas },
       surveyorServices: {
         create: payload.services.map((s) => ({

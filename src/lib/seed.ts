@@ -38,63 +38,43 @@ export const seedAdmin = async (): Promise<void> => {
 export const SEED_SERVICES = [
   {
     slug: "land-measurement",
-    name: "জমি পরিমাপ ও সীমানা নির্ধারণ",
-    description:
-      "ফিতা ও আধুনিক ডিজিটাল ইন্সট্রুমেন্ট দিয়ে জমির নির্ভুল মাপজোক এবং সীমানা চিহ্নিতকরণ।",
-  },
-  {
-    slug: "mouza-map-studio",
-    name: "মৌজা ম্যাপ ডিজিটাল নকশা ও প্লটিং",
-    description:
-      "সিএস, এসএ, আরএস ও বিএস মৌজা নকশার ওপর দাগ ভিত্তিক নিখুঁত সীমানা প্লটিং ও ডিজিটাল ড্রয়িং।",
+    name: "জমি পরিমাপ",
+    description: "প্লটের সঠিক মাপ ও ক্ষেত্রফল নির্ধারণ করুন।",
   },
   {
     slug: "land-division",
-    name: "জমি বাটোয়ারা ও অংশ বণ্টন",
-    description:
-      "উত্তরাধিকার ও শরিকদের মধ্যে খতিয়ান অনুযায়ী ফারায়েজ ও অংশ ভিত্তিক জমির সঠিক বণ্টন।",
+    name: "জমি ভাগ-বাটোয়ারা",
+    description: "ভাগ জমির সঠিক বণ্টন ও আলাদা প্লট গণনা করুন।",
+  },
+  {
+    slug: "boundary-demarcation",
+    name: "সীমানা নির্ধারণ",
+    description: "জমির সঠিক সীমানা ও সীমানা পিলার চিহ্নিত করুন।",
   },
   {
     slug: "digital-survey",
-    name: "ডিজিটাল টোটাল স্টেশন (ETS) ও GPS সার্ভে",
-    description:
-      "টোটাল স্টেশন ও ডিফারেনশিয়াল জিপিএস দিয়ে নিখুঁত কোঅর্ডিনেট ভিত্তিক মাস্টারপ্ল্যান ও টপোগ্রাফিক সার্ভে।",
+    name: "ডিজিটাল সার্ভে",
+    description: "আধুনিক ডিজিটাল পদ্ধতিতে জরিপ সম্পন্ন করুন।",
   },
   {
-    slug: "mutation",
-    name: "নামজারি ও মিসকেস তদন্ত জরিপ",
-    description:
-      "ভূমি অফিস ও সহকারী কমিশনার (ভূমি) আদালতের জন্য নামজারি ও জমাভাগ সংক্রান্ত সরেজমিন তদন্ত রিপোর্ট।",
-  },
-  {
-    slug: "khatian-search",
-    name: "খতিয়ান যাচাই ও দাগ শনাক্তকরণ",
-    description:
-      "সিএস থেকে বিএস পর্যন্ত ধারাবাহিক মালিকানা রেকর্ড এবং নকশায় দাগের অবস্থান নিশ্চিতকরণ।",
-  },
-  {
-    slug: "plot-layout",
-    name: "প্লট লেআউট ও সীমানা পিলার স্থাপন",
-    description:
-      "হাউজিং প্রকল্প ও ব্যক্তিগত প্লটের মাস্টারপ্ল্যান অনুযায়ী ডিমারকেশন ও কংক্রিট সীমানা পিলার বসানো।",
+    slug: "mouza-map-support",
+    name: "মৌজা ম্যাপ সহায়তা",
+    description: "মৌজা ম্যাপ বুঝতে ও তথ্য সংগ্রহে সাহায্য নিন।",
   },
   {
     slug: "survey-report",
-    name: "পেশাদার সার্ভে রিপোর্ট ও নকশা প্রত্যয়ন",
-    description:
-      "ব্যাংক লোন, সাব-রেজিস্ট্রি ও আদালতের জন্য সার্ভেয়ার কর্তৃক স্বাক্ষরিত সত্যায়িত নকশা ও সরেজমিন রিপোর্ট।",
+    name: "পরিমাপ রিপোর্ট প্রস্তুতি",
+    description: "জরিপকৃত জমির পূর্ণাঙ্গ রিপোর্ট তৈরি করুন।",
+  },
+  {
+    slug: "khatian-verification",
+    name: "খতিয়ান ও দাগ যাচাই",
+    description: "খতিয়ান ও দাগ নম্বর অনুযায়ী জমির মালিকানা ও অবস্থান যাচাই করুন।",
   },
   {
     slug: "building-layout",
-    name: "বিল্ডিং লেআউট ও কলাম পজিশনিং",
-    description:
-      "অনুমোদিত নকশা অনুযায়ী ভবনের বেসমেন্ট, কলাম ও পাইলিং পয়েন্টের নির্ভুল লেআউট প্রদান।",
-  },
-  {
-    slug: "record-verification",
-    name: "পুকুর, জলাশয় ও নদী সীমানা জরিপ",
-    description:
-      "পুকুর খনন, জলাশয় ভরাট প্রতিরোধ এবং নদী/বালুমহালের বাউন্ডারি নির্ধারণের বিশেষ জরিপ।",
+    name: "বিল্ডিং লেআউট",
+    description: "বাড়ি ও স্থাপনা নির্মাণের জন্য সঠিক পজিশনিং ও লেআউট প্রদান।",
   },
 ];
 
@@ -1047,10 +1027,6 @@ export const seedDistrictsAndUpazilas = async (): Promise<void> => {
 };
 
 export const seedSurveyor = async (): Promise<void> => {
-  // Always ensure services, districts, and upazilas are up-to-date
-  await seedServices();
-  await seedDistrictsAndUpazilas();
-
   const existing = await prisma.user.findUnique({
     where: { email: SURVEYOR_EMAIL },
   });
@@ -1069,8 +1045,8 @@ export const seedSurveyor = async (): Promise<void> => {
       role: "SURVEYOR",
       emailVerified: true,
       status: "ACTIVE",
-      district: "Dhaka",
-      upazila: "Tejgaon",
+      district: "ঢাকা",
+      upazila: "তেজগাঁও",
       surveyorProfile: {
         create: {
           slug: "demo-surveyor",
@@ -1083,15 +1059,15 @@ export const seedSurveyor = async (): Promise<void> => {
           surveyorServices: {
             create: [
               { service: { connect: { slug: "land-measurement" } }, startingPrice: 900 },
-              { service: { connect: { slug: "mouza-map-studio" } }, startingPrice: 1600 },
               { service: { connect: { slug: "land-division" } }, startingPrice: 2500 },
+              { service: { connect: { slug: "boundary-demarcation" } }, startingPrice: 1500 },
               { service: { connect: { slug: "digital-survey" } }, startingPrice: 5000 },
             ],
           },
           serviceAreas: {
             create: [
-              { district: "Dhaka", upazilas: ["Tejgaon", "Gulshan", "Dhanmondi", "Mirpur"] },
-              { district: "Gazipur", upazilas: ["Gazipur Sadar", "Tongi"] },
+              { district: "ঢাকা", upazilas: ["তেজগাঁও", "গুলশান", "ধানমন্ডি", "মিরপুর"] },
+              { district: "গাজীপুর", upazilas: ["গাজীপুর সদর", "টঙ্গী"] },
             ],
           },
         },

@@ -4,6 +4,7 @@ export const applyAsSurveyorSchema = z.object({
   headline: z.string().min(3, "Headline is required."),
   bio: z.string().optional(),
   experienceYears: z.coerce.number().int().min(0).default(0),
+  certificateUrl: z.string().optional(),
   serviceAreas: z
     .array(
       z.object({
@@ -26,6 +27,7 @@ export const updateSurveyorProfileSchema = z.object({
   headline: z.string().min(2).optional(),
   bio: z.string().optional(),
   experienceYears: z.coerce.number().int().min(0).optional(),
+  certificateUrl: z.string().optional(),
   serviceAreas: z
     .array(
       z.object({
