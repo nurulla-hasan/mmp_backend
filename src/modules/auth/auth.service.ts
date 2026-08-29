@@ -10,6 +10,7 @@ import { AppError } from '../../utils/app-error';
 import { jwtUtils } from '../../utils/jwt';
 
 import type { IRegisterUser } from './auth.types';
+import type { UpdateMeInput } from './auth.validation';
 import { otpService } from './otp.service';
 
 const loginUser = (user: User) => {
@@ -236,6 +237,41 @@ const getMe = async (userId: string) => {
   return user;
 };
 
+const updateMe = async (userId: string, payload: UpdateMeInput) => {
+  const data: {
+    name?: string;
+    phone?: string;
+    whatsappNumber?: string;
+  } = {};
+
+  if (payload.name !== undefined) data.name = payload.name;
+  if (payload.phone !== undefined) data.phone = payload.phone;
+  if (payload.whatsappNumber !== undefined) {
+    data.whatsappNumber = payload.whatsappNumber;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data,
+    omit: {
+      password: true,
+      googleId: true,
+      imagePublicId: true,
+      authProvider: true,
+    },
+    include: {
+      surveyorProfile: {
+        include: {
+          surveyorServices: { include: { service: true } },
+          serviceAreas: true,
+        },
+      },
+    },
+  });
+
+  return user;
+};
+
 export const authService = {
   loginUser,
   registerUser,
@@ -245,4 +281,5 @@ export const authService = {
   createGoogleLoginCode,
   exchangeGoogleLoginCode,
   getMe,
+  updateMe,
 };

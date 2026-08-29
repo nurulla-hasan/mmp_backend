@@ -9,3 +9,29 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model District {
+  id       String   @id @default(uuid())
+  name     String
+  slug     String   @unique
+  upazilas Upazila[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("districts")
+}
+
+model Upazila {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String
+  district   District @relation(fields: [districtId], references: [id])
+  districtId String   @map("district_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([districtId, slug])
+  @@map("upazilas")
+}

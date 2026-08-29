@@ -27,3 +27,14 @@ export const refreshSchema = z.object({
 export const exchangeSchema = z.object({
   code: z.string().min(1),
 });
+
+export const updateMeSchema = z.object({
+  name: z.string().trim().min(2, "Name is too short.").max(100).optional(),
+  phone: z
+    .string()
+    .regex(/^01[3-9]\d{8}$/, "Invalid phone number.")
+    .optional(),
+  whatsappNumber: z.string().optional(),
+});
+
+export type UpdateMeInput = z.infer<typeof updateMeSchema>;

@@ -661,6 +661,141 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Districts",
+      "item": [
+        {
+          "name": "Get All Districts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts"]
+            },
+            "description": "Public. Returns all districts with their upazilas. Used by the surveyor profile form to populate district/upazila selects."
+          },
+          "response": []
+        },
+        {
+          "name": "Create District (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"কিশোরগঞ্জ\",\n  \"slug\": \"kishoreganj\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts"]
+            },
+            "description": "Create a new district. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update District (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"কিশোরগঞ্জ (Updated)\",\n  \"slug\": \"kishoreganj-updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts", ":id"]
+            },
+            "description": "Update a district by id. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete District (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts", ":id"]
+            },
+            "description": "Delete a district by id. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Upazila (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ভৈরব\",\n  \"slug\": \"bhairab\",\n  \"districtId\": \"<district-id>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts/upazila",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts", "upazila"]
+            },
+            "description": "Create an upazila under a district. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Upazila (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ভৈরব (Updated)\",\n  \"slug\": \"bhairab-updated\",\n  \"districtId\": \"<district-id>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts/upazila/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts", "upazila", ":id"]
+            },
+            "description": "Update an upazila by id. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Upazila (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/districts/upazila/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "districts", "upazila", ":id"]
+            },
+            "description": "Delete an upazila by id. Admin only."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

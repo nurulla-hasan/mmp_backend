@@ -34,6 +34,14 @@ export const updateSurveyorProfileSchema = z.object({
       }),
     )
     .optional(),
+  services: z
+    .array(
+      z.object({
+        serviceId: z.string().min(1, "Service ID is required."),
+        startingPrice: z.coerce.number().min(0, "Starting price cannot be negative."),
+      }),
+    )
+    .optional(),
 });
 
 export const verifySurveyorSchema = z.object({

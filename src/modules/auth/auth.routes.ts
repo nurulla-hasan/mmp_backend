@@ -10,6 +10,7 @@ import {
   refreshSchema,
   registerSchema,
   resendOtpSchema,
+  updateMeSchema,
   verifyEmailSchema,
 } from "./auth.validation";
 
@@ -54,6 +55,13 @@ authRouter.post(
 
 authRouter.post("/logout", authController.logoutUser);
 authRouter.get("/me", auth(), authController.getMe);
+
+authRouter.patch(
+  "/me",
+  auth(),
+  validate(updateMeSchema),
+  authController.updateMe,
+);
 
 authRouter.get("/google", authController.startGoogleLogin);
 

@@ -196,6 +196,17 @@ const logoutUser: RequestHandler = (_req, res) => {
   });
 };
 
+const updateMe = catchAsync(async (req, res) => {
+  const result = await authService.updateMe(req.user!.id, req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Profile updated successfully',
+    data: { user: result },
+  });
+});
+
 export const authController = {
   loginUser,
   loginUserWithPassport,
@@ -208,5 +219,6 @@ export const authController = {
   googleLoginCallback,
   exchangeGoogleLoginCode,
   getMe,
+  updateMe,
   logoutUser,
 };

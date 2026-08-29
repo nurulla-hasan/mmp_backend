@@ -99,6 +99,7 @@ const updateMyProfile = async (
     const updated = await tx.surveyorProfile.update({
       where: { id: profile.id },
       data,
+      include: profileInclude,
     });
 
     if (payload.serviceAreas) {
@@ -110,6 +111,19 @@ const updateMyProfile = async (
           surveyorProfileId: profile.id,
           district: a.district,
           upazilas: a.upazilas,
+        })),
+      });
+    }
+
+    if (payload.services) {
+      await tx.surveyorService.deleteMany({
+        where: { surveyorProfileId: profile.id },
+      });
+      await tx.surveyorService.createMany({
+        data: payload.services.map((s) => ({
+          surveyorProfileId: profile.id,
+          serviceId: s.serviceId,
+          startingPrice: s.startingPrice,
         })),
       });
     }
