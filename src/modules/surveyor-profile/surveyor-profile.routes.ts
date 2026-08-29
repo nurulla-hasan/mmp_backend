@@ -22,6 +22,16 @@ surveyorProfileRouter.get(
   surveyorProfileController.getMyProfile,
 );
 
+surveyorProfileRouter.get(
+  "/",
+  surveyorProfileController.getAllSurveyors,
+);
+
+surveyorProfileRouter.get(
+  "/:slug",
+  surveyorProfileController.getSurveyorBySlug,
+);
+
 surveyorProfileRouter.patch(
   "/profile",
   auth("SURVEYOR"),

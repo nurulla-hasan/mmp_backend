@@ -7,6 +7,7 @@ import type {
   UpdateSurveyorProfileInput,
   VerifySurveyorInput,
 } from "./surveyor-profile.validation";
+import { Prisma } from "../../../generated/prisma/client";
 
 const profileInclude = {
   surveyorServices: { include: { service: true } },
@@ -155,7 +156,201 @@ const verifySurveyor = async (targetUserId: string, payload: VerifySurveyorInput
   });
 };
 
+const getAllSurveyors = async (query: Record<string, unknown> = {}) => {
+  const {
+    searchTerm,
+    district,
+    service,
+    rating,
+    experienceMin,
+    experienceMax,
+    sortBy,
+    page = "1",
+    limit = "12",
+  } = query;
+
+  const andConditions: Prisma.SurveyorProfileWhereInput[] = [
+    { verificationStatus: "APPROVED" },
+  ];
+
+  if (searchTerm) {
+    const term = (searchTerm as string).trim();
+    andConditions.push({
+      OR: [
+        { user: { name: { contains: term, mode: "insensitive" } } },
+        { user: { district: { contains: term, mode: "insensitive" } } },
+        { user: { upazila: { contains: term, mode: "insensitive" } } },
+        { headline: { contains: term, mode: "insensitive" } },
+        { bio: { contains: term, mode: "insensitive" } },
+        {
+          surveyorServices: {
+            some: {
+              service: {
+                name: { contains: term, mode: "insensitive" },
+              },
+            },
+          },
+        },
+        {
+          serviceAreas: {
+            some: {
+              district: { contains: term, mode: "insensitive" },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  if (district) {
+    andConditions.push({
+      serviceAreas: {
+        some: {
+          district: { equals: district as string, mode: "insensitive" },
+        },
+      },
+    });
+  }
+
+  if (service) {
+    andConditions.push({
+      surveyorServices: {
+        some: {
+          service: {
+            slug: service as string,
+          },
+        },
+      },
+    });
+  }
+
+  if (rating) {
+    const minRating = Number(rating);
+    if (!Number.isNaN(minRating)) {
+      andConditions.push({
+        rating: { gte: minRating },
+      });
+    }
+  }
+
+  if (experienceMin || experienceMax) {
+    const expFilter: Prisma.IntFilter = {};
+    if (experienceMin) expFilter.gte = parseInt(experienceMin as string, 10);
+    if (experienceMax) expFilter.lte = parseInt(experienceMax as string, 10);
+    andConditions.push({ experienceYears: expFilter });
+  }
+
+  // Pagination
+  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+  const limitNum = Math.min(
+    50,
+    Math.max(1, parseInt(limit as string, 10) || 12),
+  );
+  const skip = (pageNum - 1) * limitNum;
+
+  // Sorting
+  const orderByMap: Record<
+    string,
+    Prisma.SurveyorProfileOrderByWithRelationInput[]
+  > = {
+    rating_desc: [{ rating: "desc" }, { createdAt: "desc" }],
+    experience_desc: [{ experienceYears: "desc" }, { createdAt: "desc" }],
+    newest: [{ createdAt: "desc" }],
+    oldest: [{ createdAt: "asc" }],
+  };
+
+  const orderBy: Prisma.SurveyorProfileOrderByWithRelationInput[] = orderByMap[
+    sortBy as string
+  ] ?? [
+    { user: { isSubscribed: "desc" } },
+    { rating: "desc" },
+    { createdAt: "desc" },
+  ];
+
+  const where: Prisma.SurveyorProfileWhereInput = {
+    AND: andConditions,
+  };
+
+  const [results, total] = await Promise.all([
+    prisma.surveyorProfile.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            phone: true,
+            whatsappNumber: true,
+            district: true,
+            upazila: true,
+            isSubscribed: true,
+            createdAt: true,
+          },
+        },
+        surveyorServices: {
+          include: { service: true },
+        },
+        serviceAreas: true,
+      },
+      orderBy,
+      skip,
+      take: limitNum,
+    }),
+    prisma.surveyorProfile.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(total / limitNum) || 1;
+
+  return {
+    data: results,
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total: Number(total),
+      totalPages,
+    },
+  };
+};
+
+const getSurveyorBySlug = async (slug: string) => {
+  const profile = await prisma.surveyorProfile.findUnique({
+    where: { slug },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true,
+          phone: true,
+          whatsappNumber: true,
+          district: true,
+          upazila: true,
+          isSubscribed: true,
+          createdAt: true,
+        },
+      },
+      surveyorServices: {
+        include: { service: true },
+      },
+      serviceAreas: true,
+      reviews: {
+        where: { status: "APPROVED" },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  if (!profile) {
+    throw new AppError(httpStatus.NOT_FOUND, "Surveyor profile not found.");
+  }
+
+  return profile;
+};
+
 export const surveyorProfileService = {
+  getAllSurveyors,
+  getSurveyorBySlug,
   getMyProfile,
   applyAsSurveyor,
   updateMyProfile,

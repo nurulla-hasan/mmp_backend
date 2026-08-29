@@ -51,7 +51,32 @@ const verifySurveyor = catchAsync(async (req, res) => {
   });
 });
 
+const getAllSurveyors = catchAsync(async (req, res) => {
+  const result = await surveyorProfileService.getAllSurveyors(req.query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Surveyors retrieved successfully.",
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+const getSurveyorBySlug = catchAsync(async (req, res) => {
+  const result = await surveyorProfileService.getSurveyorBySlug(
+    req.params.slug as string,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Surveyor details retrieved.",
+    data: result,
+  });
+});
+
 export const surveyorProfileController = {
+  getAllSurveyors,
+  getSurveyorBySlug,
   applyAsSurveyor,
   getMyProfile,
   updateMyProfile,

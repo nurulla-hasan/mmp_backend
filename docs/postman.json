@@ -1,7 +1,8 @@
 {
   "info": {
-    "name": "MMP API",
-    "description": "Postman collection for the Mouza Map Pro (MMP) backend.\n\nBase URL: {{baseUrl}}\nAPI prefix: /api/v1\n\nAuth: Bearer token (access token) sent via `Authorization` header, or via httpOnly cookie set on login.",
+    "_postman_id": "mmp-backend-api-collection",
+    "name": "Mouza Map Pro (MMP) - API Collection",
+    "description": "Complete and comprehensive Postman collection for Mouza Map Pro (MMP) backend APIs, including Auth, Services catalog, Districts & Upazilas, Surveyor directory, Surveyor profile, and standalone Surveyor services.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -14,63 +15,20 @@
       "key": "accessToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
     {
-      "name": "Root",
+      "name": "01. Authentication & Profile",
+      "description": "User registration, OTP email verification, login, JWT token refresh, and user profile management.",
       "item": [
         {
-          "name": "Welcome",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/",
-              "host": ["{{baseUrl}}"],
-              "path": [""]
-            },
-            "description": "Returns a welcome message with the app name."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Health",
-      "item": [
-        {
-          "name": "Liveness",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/health/live",
-              "host": ["{{baseUrl}}"],
-              "path": ["health", "live"]
-            },
-            "description": "Liveness probe — process is up."
-          },
-          "response": []
-        },
-        {
-          "name": "Readiness",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/health/ready",
-              "host": ["{{baseUrl}}"],
-              "path": ["health", "ready"]
-            },
-            "description": "Readiness probe — dependencies (DB, Redis) are healthy."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register",
+          "name": "Register User",
           "request": {
             "method": "POST",
             "header": [
@@ -79,18 +37,17 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Md. Abdul Karim\",\n  \"email\": \"abdul.karim@example.com\",\n  \"password\": \"Password123@\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "register"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
-            },
-            "description": "Register a new user. Sends a verification OTP to the email."
-          },
-          "response": []
+            "description": "Register a new user account. Sends a 6-digit OTP code to the provided email address for verification."
+          }
         },
         {
           "name": "Verify Email (OTP)",
@@ -102,34 +59,17 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"abdul.karim@example.com\",\n  \"otp\": \"123456\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/verify-email",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "verify-email"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"otp\": \"123456\"\n}"
-            },
-            "description": "Verify email with the 6-digit OTP sent during registration."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    if (jsonData.data && jsonData.data.accessToken) {",
-                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
-                  "    }",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
+            "description": "Verify user email address using the 6-digit OTP received via email. Returns access and refresh tokens upon success."
+          }
         },
         {
           "name": "Resend OTP",
@@ -141,18 +81,17 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"abdul.karim@example.com\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/resend-otp",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "resend-otp"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\"\n}"
-            },
-            "description": "Resend the email verification OTP."
-          },
-          "response": []
+            "description": "Resends a new 6-digit OTP to the registered unverified email address."
+          }
         },
         {
           "name": "Login",
@@ -164,34 +103,17 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"abdul.karim@example.com\",\n  \"password\": \"Password123@\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/login",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "login"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
-            },
-            "description": "Login with email & password. Sets httpOnly cookies and returns access/refresh tokens."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    if (jsonData.data && jsonData.data.accessToken) {",
-                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
-                  "    }",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
+            "description": "Login with email and password. Returns user object, accessToken and refreshToken, and sets auth cookies."
+          }
         },
         {
           "name": "Refresh Token",
@@ -203,73 +125,61 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "refresh-token"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"\"\n}"
-            },
-            "description": "Issue new access/refresh tokens. Refresh token may be sent in body or read from cookie."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    if (jsonData.data && jsonData.data.accessToken) {",
-                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
-                  "    }",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
+            "description": "Generates a new accessToken using the refreshToken from body or cookies."
+          }
         },
         {
-          "name": "Google Exchange",
+          "name": "Get Current User (Me)",
           "request": {
-            "method": "POST",
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Get current logged-in user profile, roles, primary location, and associated surveyor profile (if any)."
+          }
+        },
+        {
+          "name": "Update Current User (Me)",
+          "request": {
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/google/exchange",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "google", "exchange"]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"<google-oauth-code>\"\n}"
+              "raw": "{\n  \"name\": \"মো. আব্দুল করিম\",\n  \"phone\": \"01712345678\",\n  \"whatsappNumber\": \"01712345678\",\n  \"district\": \"dinajpur\",\n  \"upazila\": \"দিনাজপুর সদর\"\n}"
             },
-            "description": "Exchange a Google OAuth authorization code for auth tokens (used by SPA flow)."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    if (jsonData.data && jsonData.data.accessToken) {",
-                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
-                  "    }",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Update personal information and primary location of current logged-in user. All fields are optional."
+          }
         },
         {
           "name": "Logout",
@@ -286,104 +196,47 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "logout"]
             },
-            "description": "Logout the current user and clear auth cookies."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    pm.collectionVariables.set('accessToken', '');",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "response": []
-        },
-        {
-          "name": "Get Me",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "me"]
-            },
-            "description": "Get the currently authenticated user's profile. Requires auth."
-          },
-          "response": []
-        },
-        {
-          "name": "Google Login (Start)",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/google",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "google"]
-            },
-            "description": "Start the Google OAuth login flow (redirects to Google)."
-          },
-          "response": []
-        },
-        {
-          "name": "Google Callback",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/google/callback",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "auth", "google", "callback"]
-            },
-            "description": "Google OAuth callback. Verifies state and completes login, then redirects to the frontend."
-          },
-          "response": []
+            "description": "Logs out current user and clears authentication cookies."
+          }
         }
       ]
     },
     {
-      "name": "Services",
+      "name": "02. Services (Catalog)",
+      "description": "Master catalog of land survey services offered on Mouza Map Pro (e.g. Land Measurement, Mouza Map Studio, Boundary Determination).",
       "item": [
         {
-          "name": "Get All Services (Admin)",
+          "name": "Get All Services (Public)",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/services",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "services"]
             },
-            "description": "Get all service categories. Admin only."
-          },
-          "response": []
+            "description": "Public endpoint to retrieve the list of all available services."
+          }
         },
         {
-          "name": "Get Service By Slug",
+          "name": "Get Service by Slug (Public)",
           "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
+              "raw": "{{baseUrl}}/api/v1/services/:slug",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "services", "land-measurement"]
+              "path": ["api", "v1", "services", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "land-measurement",
+                  "description": "Service slug"
+                }
+              ]
             },
-            "description": "Get a single service by its slug. Public."
-          },
-          "response": []
+            "description": "Public endpoint to retrieve single service details by its unique slug."
+          }
         },
         {
           "name": "Create Service (Admin)",
@@ -399,18 +252,17 @@
                 "value": "Bearer {{accessToken}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"digital-survey\",\n  \"name\": \"ডিজিটাল সার্ভে ও নকশা\",\n  \"description\": \"আধুনিক ডিজিটাল টোটাল স্টেশন ও জিপিএস দিয়ে নির্ভুল ডিজিটাল জরিপ সেবা।\"\n}"
+            },
             "url": {
               "raw": "{{baseUrl}}/api/v1/services",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "services"]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"slug\": \"land-measurement\",\n  \"name\": \"Land Measurement\",\n  \"description\": \"Professional land measuring service.\"\n}"
-            },
-            "description": "Create a new service category. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to add a new service to the catalog."
+          }
         },
         {
           "name": "Update Service (Admin)",
@@ -426,18 +278,24 @@
                 "value": "Bearer {{accessToken}}"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "services", "land-measurement"]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Land Measurement (Updated)\",\n  \"description\": \"Updated description.\"\n}"
+              "raw": "{\n  \"name\": \"ডিজিটাল সার্ভে ও ড্রয়িং\",\n  \"description\": \"আধুনিক টোটাল স্টেশন দিয়ে জমির নির্ভুল সীমানা ও প্লট ড্রয়িং।\"\n}"
             },
-            "description": "Update a service category by slug. Admin only."
-          },
-          "response": []
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "digital-survey",
+                  "description": "Service slug to update"
+                }
+              ]
+            },
+            "description": "Admin only endpoint to update an existing service by its slug."
+          }
         },
         {
           "name": "Delete Service (Admin)",
@@ -450,223 +308,28 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/services/land-measurement",
+              "raw": "{{baseUrl}}/api/v1/services/:slug",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "services", "land-measurement"]
+              "path": ["api", "v1", "services", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "digital-survey",
+                  "description": "Service slug to delete"
+                }
+              ]
             },
-            "description": "Delete a service category by slug. Admin only."
-          },
-          "response": []
-        },
-        {
-          "name": "Surveyor Services",
-          "item": [
-            {
-              "name": "Get My Services",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/services",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "services"]
-                },
-                "description": "List the services added to the logged-in surveyor's profile, with their starting prices. Surveyor only."
-              },
-              "response": []
-            },
-            {
-              "name": "Add Service",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/services",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "services"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"serviceId\": \"<service-id>\",\n  \"startingPrice\": 500\n}"
-                },
-                "description": "Add a service to the surveyor's profile with a per-surveyor starting price. Surveyor only."
-              },
-              "response": []
-            },
-            {
-              "name": "Update Service Price",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "services", ":id"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"startingPrice\": 600\n}"
-                },
-                "description": "Update the starting price of a service on the surveyor's profile. Surveyor only."
-              },
-              "response": []
-            },
-            {
-              "name": "Remove Service",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "services", ":id"]
-                },
-                "description": "Remove a service from the surveyor's profile. Surveyor only."
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Surveyor Profile",
-          "item": [
-            {
-              "name": "Apply As Surveyor",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "profile"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"headline\": \"Professional Land Surveyor\",\n  \"bio\": \"Experienced surveyor.\",\n  \"experienceYears\": 5,\n  \"serviceAreas\": [\n    { \"district\": \"Dhaka\", \"upazilas\": [\"Tejgaon\", \"Gulshan\"] }\n  ],\n  \"services\": [\n    { \"serviceId\": \"<service-id>\", \"startingPrice\": 500 }\n  ]\n}"
-                },
-                "description": "Create a surveyor profile for the logged-in user. User only."
-              },
-              "response": []
-            },
-            {
-              "name": "Get My Profile",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "profile"]
-                },
-                "description": "Get the logged-in surveyor's own profile. Surveyor only."
-              },
-              "response": []
-            },
-            {
-              "name": "Update My Profile",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", "profile"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"headline\": \"Senior Land Surveyor\",\n  \"experienceYears\": 8\n}"
-                },
-                "description": "Update the logged-in surveyor's profile. Surveyor only."
-              },
-              "response": []
-            },
-            {
-              "name": "Verify Surveyor (Admin)",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{accessToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/surveyor/:userId/verify",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "v1", "surveyor", ":userId", "verify"]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNote\": \"Documents verified.\"\n}"
-                },
-                "description": "Approve or reject a surveyor application. On APPROVED the user's role flips to SURVEYOR. Admin only."
-              },
-              "response": []
-            }
-          ]
+            "description": "Admin only endpoint to remove a service from the catalog."
+          }
         }
       ]
     },
     {
-      "name": "Districts",
+      "name": "03. Districts & Upazilas",
+      "description": "Location hierarchy catalog containing districts and their nested upazilas across Bangladesh.",
       "item": [
         {
-          "name": "Get All Districts",
+          "name": "Get All Districts with Upazilas (Public)",
           "request": {
             "method": "GET",
             "header": [],
@@ -675,127 +338,478 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "districts"]
             },
-            "description": "Public. Returns all districts with their upazilas. Used by the surveyor profile form to populate district/upazila selects."
-          },
-          "response": []
+            "description": "Public catalog returning all districts with their label, slug value, and list of upazila names."
+          }
         },
         {
           "name": "Create District (Admin)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"কিশোরগঞ্জ\",\n  \"slug\": \"kishoreganj\"\n}"
+              "raw": "{\n  \"name\": \"দিনাজপুর\",\n  \"slug\": \"dinajpur\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/districts",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "districts"]
             },
-            "description": "Create a new district. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to add a new district."
+          }
         },
         {
           "name": "Update District (Admin)",
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"কিশোরগঞ্জ (Updated)\",\n  \"slug\": \"kishoreganj-updated\"\n}"
+              "raw": "{\n  \"name\": \"দিনাজপুর\",\n  \"slug\": \"dinajpur\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/districts/:id",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "districts", ":id"]
+              "path": ["api", "v1", "districts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "district-uuid-here",
+                  "description": "District ID"
+                }
+              ]
             },
-            "description": "Update a district by id. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to update district name or slug."
+          }
         },
         {
           "name": "Delete District (Admin)",
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/districts/:id",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "districts", ":id"]
+              "path": ["api", "v1", "districts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "district-uuid-here",
+                  "description": "District ID"
+                }
+              ]
             },
-            "description": "Delete a district by id. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to delete a district."
+          }
         },
         {
           "name": "Create Upazila (Admin)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"ভৈরব\",\n  \"slug\": \"bhairab\",\n  \"districtId\": \"<district-id>\"\n}"
+              "raw": "{\n  \"name\": \"দিনাজপুর সদর\",\n  \"slug\": \"dinajpur-sadar\",\n  \"districtId\": \"district-uuid-here\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/districts/upazila",
+              "raw": "{{baseUrl}}/api/v1/districts/upazilas",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "districts", "upazila"]
+              "path": ["api", "v1", "districts", "upazilas"]
             },
-            "description": "Create an upazila under a district. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to add an upazila under a district."
+          }
         },
         {
           "name": "Update Upazila (Admin)",
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"ভৈরব (Updated)\",\n  \"slug\": \"bhairab-updated\",\n  \"districtId\": \"<district-id>\"\n}"
+              "raw": "{\n  \"name\": \"বীরগঞ্জ\",\n  \"slug\": \"birganj\",\n  \"districtId\": \"district-uuid-here\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/districts/upazila/:id",
+              "raw": "{{baseUrl}}/api/v1/districts/upazilas/:id",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "districts", "upazila", ":id"]
+              "path": ["api", "v1", "districts", "upazilas", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "upazila-uuid-here",
+                  "description": "Upazila ID"
+                }
+              ]
             },
-            "description": "Update an upazila by id. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to update an upazila."
+          }
         },
         {
           "name": "Delete Upazila (Admin)",
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/districts/upazila/:id",
+              "raw": "{{baseUrl}}/api/v1/districts/upazilas/:id",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "districts", "upazila", ":id"]
+              "path": ["api", "v1", "districts", "upazilas", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "upazila-uuid-here",
+                  "description": "Upazila ID"
+                }
+              ]
             },
-            "description": "Delete an upazila by id. Admin only."
-          },
-          "response": []
+            "description": "Admin only endpoint to delete an upazila."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Surveyor Directory & Profiles",
+      "description": "Public surveyor listing, detailed public profiles, application as a surveyor, self-profile updates, and admin verification.",
+      "item": [
+        {
+          "name": "Get All Verified Surveyors (Public with Filters & Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor?searchTerm=দিনাজপুর&district=dinajpur&service=land-measurement&rating=4&sortBy=rating_desc&page=1&limit=12",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor"],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "দিনাজপুর",
+                  "description": "Search by surveyor name, headline, bio, location or service name"
+                },
+                {
+                  "key": "district",
+                  "value": "dinajpur",
+                  "description": "Filter by coverage district slug"
+                },
+                {
+                  "key": "service",
+                  "value": "land-measurement",
+                  "description": "Filter by offered service slug"
+                },
+                {
+                  "key": "rating",
+                  "value": "4",
+                  "description": "Filter by minimum rating (e.g. 4 for 4+ stars)"
+                },
+                {
+                  "key": "experienceMin",
+                  "value": "2",
+                  "disabled": true,
+                  "description": "Minimum years of experience"
+                },
+                {
+                  "key": "experienceMax",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Maximum years of experience"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "rating_desc",
+                  "description": "Sort order: rating_desc | experience_desc | newest | oldest"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (defaults to 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page (defaults to 12, max 50)"
+                }
+              ]
+            },
+            "description": "Public listing endpoint returning verified surveyors with pagination meta (page, limit, total, totalPages) and full nested service & area data."
+          }
+        },
+        {
+          "name": "Get Single Surveyor by Slug (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "demo-surveyor",
+                  "description": "Unique slug of the surveyor"
+                }
+              ]
+            },
+            "description": "Public endpoint to retrieve complete public profile of a surveyor including user information, services with starting prices, service areas, and approved reviews."
+          }
+        },
+        {
+          "name": "Get My Surveyor Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "profile"]
+            },
+            "description": "Retrieve logged-in surveyor's own profile data (Surveyor role required)."
+          }
+        },
+        {
+          "name": "Apply as Surveyor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"জমি পরিমাপ ও ডিজিটাল সার্ভে বিশেষজ্ঞ\",\n  \"bio\": \"আমি দীর্ঘ ১০ বছর ধরে দিনাজপুর ও পার্শ্ববর্তী এলাকায় বিশ্বস্ততার সাথে জমি জরিপ, প্লট ড্রয়িং এবং খতিয়ান সংক্রান্ত কাজ করে আসছি।\",\n  \"experienceYears\": 10,\n  \"serviceAreas\": [\n    {\n      \"district\": \"dinajpur\",\n      \"upazilas\": [\"দিনাজপুর সদর\", \"বিরল\", \"কাহারোল\"]\n    },\n    {\n      \"district\": \"thakurgaon\",\n      \"upazilas\": [\"ঠাকুরগাঁও সদর\"]\n    }\n  ],\n  \"services\": [\n    {\n      \"serviceId\": \"service-uuid-1\",\n      \"startingPrice\": 3500\n    },\n    {\n      \"serviceId\": \"service-uuid-2\",\n      \"startingPrice\": 5000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "profile"]
+            },
+            "description": "Submit an application to register as a professional surveyor. Creates profile in PENDING verification status."
+          }
+        },
+        {
+          "name": "Update My Surveyor Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"জমি পরিমাপ, সীমানা নির্ধারণ ও ডিজিটাল সার্ভে বিশেষজ্ঞ\",\n  \"experienceYears\": 11,\n  \"bio\": \"আমি দীর্ঘ ১১ বছর ধরে বিশ্বস্ততার সাথে জমি জরিপ, সীমানা চিহ্নিতকরণ ও ডিজিটাল নকশার কাজ করে আসছি।\",\n  \"serviceAreas\": [\n    {\n      \"district\": \"dinajpur\",\n      \"upazilas\": [\"দিনাজপুর সদর\", \"বিরল\", \"বোচাগঞ্জ\", \"কাহারোল\"]\n    }\n  ],\n  \"services\": [\n    {\n      \"serviceId\": \"service-uuid-1\",\n      \"startingPrice\": 4000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "profile"]
+            },
+            "description": "Update logged-in surveyor profile fields (headline, bio, experienceYears, serviceAreas, services). All fields are optional."
+          }
+        },
+        {
+          "name": "Verify / Approve Surveyor (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNote\": \"এনআইডি এবং পেশাগত সনদ যাচাই সম্পন্ন হয়েছে।\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/:userId/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", ":userId", "verify"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "target-user-uuid-here",
+                  "description": "User ID of the applicant surveyor"
+                }
+              ]
+            },
+            "description": "Admin only endpoint to approve or reject a surveyor's application. When approved, user role is upgraded to SURVEYOR."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Surveyor Standalone Services",
+      "description": "Endpoints for a surveyor to manage their individual services and starting prices outside the full profile update.",
+      "item": [
+        {
+          "name": "Get My Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/services/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "services", "my"]
+            },
+            "description": "Get all services and custom starting prices configured by the logged-in surveyor."
+          }
+        },
+        {
+          "name": "Add Service to Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"service-uuid-here\",\n  \"startingPrice\": 3500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "services"]
+            },
+            "description": "Add a new service to the logged-in surveyor's profile."
+          }
+        },
+        {
+          "name": "Update Service Starting Price",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startingPrice\": 4500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "surveyor-service-uuid-here",
+                  "description": "SurveyorService record ID"
+                }
+              ]
+            },
+            "description": "Update the starting price of a service already assigned to the surveyor's profile."
+          }
+        },
+        {
+          "name": "Remove Service from Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyor", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "surveyor-service-uuid-here",
+                  "description": "SurveyorService record ID"
+                }
+              ]
+            },
+            "description": "Delete/remove an assigned service from the surveyor's profile."
+          }
         }
       ]
     }
   ]
 }
+

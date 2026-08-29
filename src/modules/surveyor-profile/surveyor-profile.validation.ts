@@ -23,7 +23,7 @@ export const applyAsSurveyorSchema = z.object({
 });
 
 export const updateSurveyorProfileSchema = z.object({
-  headline: z.string().min(3).optional(),
+  headline: z.string().min(2).optional(),
   bio: z.string().optional(),
   experienceYears: z.coerce.number().int().min(0).optional(),
   serviceAreas: z
