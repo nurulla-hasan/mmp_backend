@@ -9,8 +9,6 @@ import {
 
 export const serviceRouter = Router();
 
-serviceRouter.get("/active", serviceController.getActiveServices);
-
 // Admin only
 serviceRouter.post(
   "/",
@@ -19,7 +17,8 @@ serviceRouter.post(
   serviceController.createService,
 );
 
-serviceRouter.get("/", auth("ADMIN"), serviceController.getAllServices);
+// Public: সার্ভিস লিস্ট (id + slug + name) সবাই দেখতে পারবে
+serviceRouter.get("/", serviceController.getAllServices);
 
 serviceRouter.patch(
   "/:slug",

@@ -22,17 +22,6 @@ const getAllServices = catchAsync(async (_req, res) => {
   });
 });
 
-const getActiveServices = catchAsync(async (_req, res) => {
-  const result = await serviceService.getActiveServices();
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Active services retrieved.",
-    data: result,
-  });
-});
-
-
 const updateService = catchAsync(async (req, res) => {
   const result = await serviceService.updateService(req.params.slug as string, req.body);
   sendResponse(res, {
@@ -56,7 +45,6 @@ const deleteService = catchAsync(async (req, res) => {
 export const serviceController = {
   createService,
   getAllServices,
-  getActiveServices,
   updateService,
   deleteService,
 };

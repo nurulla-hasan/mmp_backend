@@ -354,19 +354,6 @@
       "name": "Services",
       "item": [
         {
-          "name": "Get Active Services",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/services/active",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "services", "active"]
-            },
-            "description": "Get all active service categories. Public — used by the surveyor profile form."
-          },
-          "response": []
-        },
-        {
           "name": "Get All Services (Admin)",
           "request": {
             "method": "GET",
@@ -381,7 +368,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "services"]
             },
-            "description": "Get all services (including inactive). Admin only."
+            "description": "Get all service categories. Admin only."
           },
           "response": []
         },
@@ -419,7 +406,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"slug\": \"land-measurement\",\n  \"name\": \"Land Measurement\",\n  \"description\": \"Professional land measuring service.\",\n  \"startingPrice\": 500,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"slug\": \"land-measurement\",\n  \"name\": \"Land Measurement\",\n  \"description\": \"Professional land measuring service.\"\n}"
             },
             "description": "Create a new service category. Admin only."
           },
@@ -446,7 +433,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"startingPrice\": 600,\n  \"isActive\": true\n}"
+              "raw": "{\n  \"name\": \"Land Measurement (Updated)\",\n  \"description\": \"Updated description.\"\n}"
             },
             "description": "Update a service category by slug. Admin only."
           },
@@ -470,6 +457,208 @@
             "description": "Delete a service category by slug. Admin only."
           },
           "response": []
+        },
+        {
+          "name": "Surveyor Services",
+          "item": [
+            {
+              "name": "Get My Services",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/services",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "services"]
+                },
+                "description": "List the services added to the logged-in surveyor's profile, with their starting prices. Surveyor only."
+              },
+              "response": []
+            },
+            {
+              "name": "Add Service",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/services",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "services"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"serviceId\": \"<service-id>\",\n  \"startingPrice\": 500\n}"
+                },
+                "description": "Add a service to the surveyor's profile with a per-surveyor starting price. Surveyor only."
+              },
+              "response": []
+            },
+            {
+              "name": "Update Service Price",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "services", ":id"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"startingPrice\": 600\n}"
+                },
+                "description": "Update the starting price of a service on the surveyor's profile. Surveyor only."
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Service",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/services/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "services", ":id"]
+                },
+                "description": "Remove a service from the surveyor's profile. Surveyor only."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Surveyor Profile",
+          "item": [
+            {
+              "name": "Apply As Surveyor",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "profile"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"headline\": \"Professional Land Surveyor\",\n  \"bio\": \"Experienced surveyor.\",\n  \"experienceYears\": 5,\n  \"serviceAreas\": [\n    { \"district\": \"Dhaka\", \"upazilas\": [\"Tejgaon\", \"Gulshan\"] }\n  ],\n  \"services\": [\n    { \"serviceId\": \"<service-id>\", \"startingPrice\": 500 }\n  ]\n}"
+                },
+                "description": "Create a surveyor profile for the logged-in user. User only."
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "profile"]
+                },
+                "description": "Get the logged-in surveyor's own profile. Surveyor only."
+              },
+              "response": []
+            },
+            {
+              "name": "Update My Profile",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", "profile"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"headline\": \"Senior Land Surveyor\",\n  \"experienceYears\": 8\n}"
+                },
+                "description": "Update the logged-in surveyor's profile. Surveyor only."
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Surveyor (Admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/surveyor/:userId/verify",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "surveyor", ":userId", "verify"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNote\": \"Documents verified.\"\n}"
+                },
+                "description": "Approve or reject a surveyor application. On APPROVED the user's role flips to SURVEYOR. Admin only."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }

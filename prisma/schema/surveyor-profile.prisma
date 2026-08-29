@@ -22,9 +22,9 @@ model SurveyorProfile {
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
-    services     String[]         @default([])
-    serviceAreas ServiceArea[]
-    reviews      SurveyorReview[]
+    surveyorServices SurveyorService[]
+    serviceAreas      ServiceArea[]
+    reviews           SurveyorReview[]
 
     @@map("surveyor_profiles")
 }

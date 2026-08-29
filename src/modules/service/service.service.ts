@@ -17,8 +17,6 @@ const createService = async (payload: CreateServiceInput) => {
       slug: payload.slug,
       name: payload.name,
       description: payload.description,
-      startingPrice: payload.startingPrice,
-      isActive: payload.isActive ?? true,
     },
   });
 
@@ -27,13 +25,6 @@ const createService = async (payload: CreateServiceInput) => {
 
 const getAllServices = async () => {
   return prisma.service.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-};
-
-const getActiveServices = async () => {
-  return prisma.service.findMany({
-    where: { isActive: true },
     orderBy: { createdAt: "desc" },
   });
 };
@@ -72,7 +63,6 @@ const deleteService = async (slug: string) => {
 export const serviceService = {
   createService,
   getAllServices,
-  getActiveServices,
   updateService,
   deleteService,
 };

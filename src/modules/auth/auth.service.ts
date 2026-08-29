@@ -219,6 +219,14 @@ const getMe = async (userId: string) => {
       imagePublicId: true,
       authProvider: true,
     },
+    include: {
+      surveyorProfile: {
+        include: {
+          surveyorServices: { include: { service: true } },
+          serviceAreas: true,
+        },
+      },
+    },
   });
 
   if (!user) {

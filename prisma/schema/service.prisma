@@ -1,12 +1,12 @@
 model Service {
-  id            String   @id @default(uuid())
-  slug          String   @unique @map("slug")
-  name          String
-  description   String?
-  startingPrice Float?   @default(0) @map("starting_price")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id          String             @id @default(uuid())
+  slug        String             @unique @map("slug")
+  name        String
+  description String?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  surveyorServices SurveyorService[]
 
   @@map("services")
 }
