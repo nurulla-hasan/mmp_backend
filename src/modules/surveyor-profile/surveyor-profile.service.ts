@@ -82,23 +82,12 @@ const updateMyProfile = async (
   payload: UpdateSurveyorProfileInput,
 ) => {
   const profile = await getMyProfile(userId);
-
-  const data: {
-    headline?: string;
-    bio?: string | null;
-    experienceYears?: number;
-  } = {};
-
-  if (payload.headline !== undefined) data.headline = payload.headline;
-  if (payload.bio !== undefined) data.bio = payload.bio;
-  if (payload.experienceYears !== undefined) {
-    data.experienceYears = payload.experienceYears;
-  }
+  const { serviceAreas, services, ...profileData } = payload;
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.surveyorProfile.update({
       where: { id: profile.id },
-      data,
+      data: profileData,
       include: profileInclude,
     });
 

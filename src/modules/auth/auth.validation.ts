@@ -35,6 +35,8 @@ export const updateMeSchema = z.object({
     .regex(/^01[3-9]\d{8}$/, "Invalid phone number.")
     .optional(),
   whatsappNumber: z.string().optional(),
+  district: z.string().optional(),
+  upazila: z.string().optional(),
 });
 
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;

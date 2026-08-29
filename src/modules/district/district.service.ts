@@ -23,7 +23,7 @@ const getAllDistricts = async (): Promise<DistrictResponse[]> => {
 
 const createDistrict = async (payload: { name: string; slug: string }) => {
   return prisma.district.create({
-    data: { name: payload.name, slug: payload.slug },
+    data: payload,
   });
 };
 
@@ -37,7 +37,7 @@ const updateDistrict = async (
   }
   return prisma.district.update({
     where: { id },
-    data: { name: payload.name, slug: payload.slug },
+    data: payload,
   });
 };
 
@@ -55,11 +55,7 @@ const createUpazila = async (payload: {
   districtId: string;
 }) => {
   return prisma.upazila.create({
-    data: {
-      name: payload.name,
-      slug: payload.slug,
-      districtId: payload.districtId,
-    },
+    data: payload,
   });
 };
 
@@ -73,7 +69,7 @@ const updateUpazila = async (
   }
   return prisma.upazila.update({
     where: { id },
-    data: { name: payload.name, slug: payload.slug, districtId: payload.districtId },
+    data: payload,
   });
 };
 

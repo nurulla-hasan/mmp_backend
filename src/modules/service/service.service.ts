@@ -13,11 +13,7 @@ const createService = async (payload: CreateServiceInput) => {
   }
 
   const service = await prisma.service.create({
-    data: {
-      slug: payload.slug,
-      name: payload.name,
-      description: payload.description,
-    },
+    data: payload,
   });
 
   return service;

@@ -51,8 +51,7 @@ const addService = async (userId: string, payload: AddSurveyorServiceInput) => {
   return prisma.surveyorService.create({
     data: {
       surveyorProfileId: profile.id,
-      serviceId: payload.serviceId,
-      startingPrice: payload.startingPrice,
+      ...payload,
     },
     include: { service: true },
   });

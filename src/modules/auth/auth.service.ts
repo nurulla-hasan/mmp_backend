@@ -238,21 +238,9 @@ const getMe = async (userId: string) => {
 };
 
 const updateMe = async (userId: string, payload: UpdateMeInput) => {
-  const data: {
-    name?: string;
-    phone?: string;
-    whatsappNumber?: string;
-  } = {};
-
-  if (payload.name !== undefined) data.name = payload.name;
-  if (payload.phone !== undefined) data.phone = payload.phone;
-  if (payload.whatsappNumber !== undefined) {
-    data.whatsappNumber = payload.whatsappNumber;
-  }
-
   const user = await prisma.user.update({
     where: { id: userId },
-    data,
+    data: payload,
     omit: {
       password: true,
       googleId: true,
