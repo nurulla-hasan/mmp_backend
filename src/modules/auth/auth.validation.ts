@@ -28,22 +28,44 @@ export const exchangeSchema = z.object({
   code: z.string().min(1),
 });
 
+const bdPhoneRegex = /^(?:\+?88)?01[3-9]\d{8}$/;
+
 export const updateMeSchema = z.object({
   name: z.string().trim().min(2, "Name is too short.").max(100).optional(),
   phone: z
     .string()
     .trim()
-    .regex(/^01[3-9]\d{8}$/, "Invalid phone number.")
+    .regex(bdPhoneRegex, "Invalid phone number.")
     .or(z.literal(""))
     .optional(),
   whatsappNumber: z
     .string()
     .trim()
-    .regex(/^01[3-9]\d{8}$/, "Invalid WhatsApp number.")
+    .regex(bdPhoneRegex, "Invalid WhatsApp number.")
     .or(z.literal(""))
     .optional(),
   district: z.string().optional(),
   upazila: z.string().optional(),
+  imageUrl: z.string().trim().url("Invalid image URL.").or(z.literal("")).optional(),
 });
 
+export const changePasswordSchema = z
+  .object({
+    oldPassword: z.string().optional(),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters.")
+      .max(72),
+    confirmPassword: z.string().min(8),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirm password do not match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => !data.oldPassword || data.oldPassword !== data.newPassword, {
+    message: "New password cannot be the same as current password.",
+    path: ["newPassword"],
+  });
+
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

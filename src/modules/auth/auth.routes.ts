@@ -5,6 +5,7 @@ import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { authController } from "./auth.controller";
 import {
+  changePasswordSchema,
   exchangeSchema,
   loginSchema,
   refreshSchema,
@@ -61,6 +62,13 @@ authRouter.patch(
   auth(),
   validate(updateMeSchema),
   authController.updateMe,
+);
+
+authRouter.post(
+  "/change-password",
+  auth(),
+  validate(changePasswordSchema),
+  authController.changePassword,
 );
 
 authRouter.get("/google", authController.startGoogleLogin);

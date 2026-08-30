@@ -207,6 +207,17 @@ const updateMe = catchAsync(async (req, res) => {
   });
 });
 
+const changePassword = catchAsync(async (req, res) => {
+  const result = await authService.changePassword(req.user!.id, req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: result.message,
+    data: null,
+  });
+});
+
 export const authController = {
   loginUser,
   loginUserWithPassport,
@@ -220,5 +231,6 @@ export const authController = {
   exchangeGoogleLoginCode,
   getMe,
   updateMe,
+  changePassword,
   logoutUser,
 };

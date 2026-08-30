@@ -10,7 +10,7 @@ import { AppError } from '../../utils/app-error';
 import { jwtUtils } from '../../utils/jwt';
 
 import type { IRegisterUser } from './auth.types';
-import type { UpdateMeInput } from './auth.validation';
+import type { UpdateMeInput, ChangePasswordInput } from './auth.validation';
 import { otpService } from './otp.service';
 import { planService } from '../plan/plan.service';
 
@@ -219,12 +219,6 @@ const exchangeGoogleLoginCode = async (code: string) => {
 const getMe = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    omit: {
-      password: true,
-      googleId: true,
-      imagePublicId: true,
-      authProvider: true,
-    },
     include: {
       surveyorProfile: {
         include: {
@@ -239,7 +233,12 @@ const getMe = async (userId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  return user;
+  const { password, googleId, imagePublicId, ...safeUser } = user;
+
+  return {
+    ...safeUser,
+    hasPassword: Boolean(password),
+  };
 };
 
 const updateMe = async (userId: string, payload: UpdateMeInput) => {
@@ -265,6 +264,41 @@ const updateMe = async (userId: string, payload: UpdateMeInput) => {
   return user;
 };
 
+const changePassword = async (userId: string, payload: ChangePasswordInput) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, password: true },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  if (user.password) {
+    if (!payload.oldPassword) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Current password is required.");
+    }
+    const isMatch = await bcrypt.compare(payload.oldPassword, user.password);
+    if (!isMatch) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Current password does not match.");
+    }
+
+    const isSame = await bcrypt.compare(payload.newPassword, user.password);
+    if (isSame) {
+      throw new AppError(httpStatus.BAD_REQUEST, "New password cannot be the same as current password.");
+    }
+  }
+
+  const hashedPassword = await bcrypt.hash(payload.newPassword, 12);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
+
+  return { message: "Password changed successfully." };
+};
+
 export const authService = {
   loginUser,
   registerUser,
@@ -275,4 +309,5 @@ export const authService = {
   exchangeGoogleLoginCode,
   getMe,
   updateMe,
+  changePassword,
 };
