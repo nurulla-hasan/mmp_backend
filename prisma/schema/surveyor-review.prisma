@@ -1,7 +1,9 @@
 model SurveyorReview {
   id                String             @id @default(uuid())
   surveyorProfileId String             @map("surveyor_profile_id")
+  userId            String?            @map("user_id")
   reviewerName      String             @map("reviewer_name")
+  reviewerEmail     String?            @map("reviewer_email")
   serviceName       String?            @map("service_name")
   rating            Int
   comment           String
@@ -9,7 +11,9 @@ model SurveyorReview {
   createdAt         DateTime           @default(now()) @map("created_at")
 
   surveyorProfile SurveyorProfile @relation(fields: [surveyorProfileId], references: [id], onDelete: Cascade)
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([surveyorProfileId])
+  @@index([userId])
   @@map("surveyor_reviews")
 }

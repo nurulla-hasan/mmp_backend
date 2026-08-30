@@ -3,9 +3,10 @@ import { sendResponse } from "../../utils/send-response";
 import { reviewService } from "./review.service";
 import { getReviewsQuerySchema } from "./review.validation";
 
-// 1. Public: Create review
+// 1. Authenticated User: Create review
 const createReview = catchAsync(async (req, res) => {
-  const result = await reviewService.createReview(req.body);
+  const user = req.user as { id: string; name: string; email: string };
+  const result = await reviewService.createReview(user, req.body);
   sendResponse(res, {
     statusCode: 201,
     success: true,
@@ -58,4 +59,3 @@ export const reviewController = {
   updateReviewStatus,
   deleteReview,
 };
-

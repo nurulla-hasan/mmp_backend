@@ -9,9 +9,10 @@ import {
 
 export const reviewRouter = Router();
 
-// Public: Submit a review
+// Authenticated Users/Surveyors/Admins can submit a review
 reviewRouter.post(
   "/",
+  auth("USER", "SURVEYOR", "ADMIN", "SUPER_ADMIN"),
   validate(createReviewSchema),
   reviewController.createReview,
 );
@@ -37,4 +38,3 @@ reviewRouter.delete(
   auth("ADMIN"),
   reviewController.deleteReview,
 );
-

@@ -2,8 +2,7 @@ import { z } from "zod";
 
 export const createReviewSchema = z.object({
   surveyorProfileId: z.string().min(1, "Surveyor Profile ID is required."),
-  reviewerName: z.string().min(2, "Reviewer name must be at least 2 characters."),
-  serviceName: z.string().optional(),
+  serviceName: z.string().optional().nullable(),
   rating: z.coerce.number().int().min(1, "Rating must be between 1 and 5.").max(5, "Rating must be between 1 and 5."),
   comment: z.string().min(3, "Comment must be at least 3 characters."),
 });
