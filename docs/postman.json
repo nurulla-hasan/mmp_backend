@@ -1000,6 +1000,178 @@
           }
         }
       ]
+    },
+    {
+      "name": "07. User Management (Admin)",
+      "description": "Admin endpoints to list users, search, filter by role/status, inspect user details, update status, change roles, and delete accounts.",
+      "item": [
+        {
+          "name": "Get All Users (Search, Filter, Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?searchTerm=rahim&role=USER&status=ACTIVE&page=1&limit=10&sortBy=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "rahim",
+                  "description": "Search by name, email, or phone"
+                },
+                {
+                  "key": "role",
+                  "value": "USER",
+                  "description": "Filter by role: USER | SURVEYOR | ADMIN"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "Filter by status: ACTIVE | BLOCKED"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Page size (default: 10)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort order: newest | oldest | name_asc | name_desc"
+                }
+              ]
+            },
+            "description": "Retrieve paginated list of users with search, role, status filters, and plot measurement statistics."
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "user-uuid-here",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Retrieve full profile, measurement stats, and calculation count for a single user."
+          }
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BLOCKED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "user-uuid-here",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Update user account status between ACTIVE and BLOCKED."
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"SURVEYOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/:id/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", ":id", "role"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "user-uuid-here",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Change user role between USER, SURVEYOR, and ADMIN."
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "user-uuid-here",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Permanently delete a user account and associated data."
+          }
+        }
+      ]
     }
   ]
 }
