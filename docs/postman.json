@@ -1735,6 +1735,159 @@
           }
         }
       ]
+    },
+    {
+      "name": "10. Subscribers Management",
+      "description": "Admin endpoints to monitor subscribers, manage memberships, extend periods, and revoke subscriptions.",
+      "item": [
+        {
+          "name": "Get All Subscribers (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscribers?status=ALL&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscribers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "ALL | ACTIVE | EXPIRED | CANCELLED | PENDING"
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieve paginated list of subscribers with user details, active plan, and validity (Admin only)."
+          }
+        },
+        {
+          "name": "Get Single Subscriber Details (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscribers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscribers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid",
+                  "description": "Subscription UUID"
+                }
+              ]
+            },
+            "description": "Get detailed subscriber and payment information (Admin only)."
+          }
+        },
+        {
+          "name": "Create Subscription Manually (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-uuid\",\n  \"planId\": \"plan-uuid\",\n  \"durationDays\": 365,\n  \"paymentMethod\": \"MANUAL\",\n  \"transactionId\": \"TRX-MANUAL-001\",\n  \"amountPaid\": 1599,\n  \"adminNote\": \"Manual subscription assigned by Admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscribers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscribers"]
+            },
+            "description": "Manually grant a subscription to a user (Admin only)."
+          }
+        },
+        {
+          "name": "Extend Subscription (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"days\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscribers/:id/extend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscribers", ":id", "extend"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid",
+                  "description": "Subscription UUID"
+                }
+              ]
+            },
+            "description": "Extend subscription validity by a specified number of days (Admin only)."
+          }
+        },
+        {
+          "name": "Revoke / Cancel Subscription (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscribers/:id/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscribers", ":id", "revoke"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid",
+                  "description": "Subscription UUID"
+                }
+              ]
+            },
+            "description": "Cancel active subscription and revert user to Free status (Admin only)."
+          }
+        }
+      ]
     }
   ]
 }

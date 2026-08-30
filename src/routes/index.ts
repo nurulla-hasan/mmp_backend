@@ -8,6 +8,7 @@ import { calculationRouter } from '../modules/calculation/calculation.routes';
 import { userRouter } from '../modules/user/user.routes';
 import { reviewRouter } from '../modules/review/review.routes';
 import { planRouter } from '../modules/plan/plan.routes';
+import { subscriptionRouter } from '../modules/subscription/subscription.routes';
 
 export const apiRouter = Router();
 apiRouter.use('/auth', authRouter);
@@ -20,3 +21,5 @@ apiRouter.use('/surveyors', surveyorProfileRouter);
 apiRouter.use('/calculations', calculationRouter);
 apiRouter.use('/reviews', reviewRouter);
 apiRouter.use('/plans', planRouter);
+apiRouter.use('/subscribers', subscriptionRouter);
+apiRouter.use('/subscriptions', subscriptionRouter);
