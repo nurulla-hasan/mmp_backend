@@ -17,7 +17,9 @@ export const applyAsSurveyorSchema = z.object({
     .array(
       z.object({
         serviceId: z.string().min(1, "Service ID is required."),
-        startingPrice: z.coerce.number().min(0, "Starting price cannot be negative."),
+        startingPrice: z.coerce
+          .number()
+          .min(0, "Starting price cannot be negative."),
       }),
     )
     .min(1, "At least one service is required."),
@@ -40,7 +42,9 @@ export const updateSurveyorProfileSchema = z.object({
     .array(
       z.object({
         serviceId: z.string().min(1, "Service ID is required."),
-        startingPrice: z.coerce.number().min(0, "Starting price cannot be negative."),
+        startingPrice: z.coerce
+          .number()
+          .min(0, "Starting price cannot be negative."),
       }),
     )
     .optional(),
@@ -51,6 +55,22 @@ export const verifySurveyorSchema = z.object({
   adminNote: z.string().optional(),
 });
 
+export const getVerificationsQuerySchema = z.object({
+  searchTerm: z.string().optional(),
+  status: z
+    .enum(["ALL", "PENDING", "APPROVED", "REJECTED"])
+    .optional()
+    .default("ALL"),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
+  sortBy: z.enum(["newest", "oldest"]).default("newest"),
+});
+
 export type ApplyAsSurveyorInput = z.infer<typeof applyAsSurveyorSchema>;
-export type UpdateSurveyorProfileInput = z.infer<typeof updateSurveyorProfileSchema>;
+export type UpdateSurveyorProfileInput = z.infer<
+  typeof updateSurveyorProfileSchema
+>;
 export type VerifySurveyorInput = z.infer<typeof verifySurveyorSchema>;
+export type GetVerificationsQueryInput = z.infer<
+  typeof getVerificationsQuerySchema
+>;

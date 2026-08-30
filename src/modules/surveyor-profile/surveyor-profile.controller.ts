@@ -1,6 +1,7 @@
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { surveyorProfileService } from "./surveyor-profile.service";
+import { getVerificationsQuerySchema } from "./surveyor-profile.validation";
 
 const applyAsSurveyor = catchAsync(async (req, res) => {
   const result = await surveyorProfileService.applyAsSurveyor(
@@ -46,7 +47,7 @@ const verifySurveyor = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: `Surveyor ${result.verificationStatus.toLowerCase()}.`,
+    message: `Surveyor verification ${result.verificationStatus.toLowerCase()} successfully.`,
     data: result,
   });
 });
@@ -74,6 +75,32 @@ const getSurveyorBySlug = catchAsync(async (req, res) => {
   });
 });
 
+// Admin: Get all verification requests
+const getVerificationRequests = catchAsync(async (req, res) => {
+  const query = getVerificationsQuerySchema.parse(req.query);
+  const result = await surveyorProfileService.getVerificationRequests(query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Verification requests retrieved successfully.",
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// Admin: Get verification request details
+const getVerificationRequestById = catchAsync(async (req, res) => {
+  const result = await surveyorProfileService.getVerificationRequestById(
+    req.params.id as string,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Verification request retrieved successfully.",
+    data: result,
+  });
+});
+
 export const surveyorProfileController = {
   getAllSurveyors,
   getSurveyorBySlug,
@@ -81,4 +108,6 @@ export const surveyorProfileController = {
   getMyProfile,
   updateMyProfile,
   verifySurveyor,
+  getVerificationRequests,
+  getVerificationRequestById,
 };

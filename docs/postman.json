@@ -1343,6 +1343,108 @@
           }
         }
       ]
+    },
+    {
+      "name": "07. Surveyor Verification Requests",
+      "description": "Admin APIs for reviewing, approving, and rejecting surveyor verification (KYC) applications.",
+      "item": [
+        {
+          "name": "Get All Verification Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyors/verifications?status=ALL&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyors", "verifications"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "Filter by status: ALL | PENDING | APPROVED | REJECTED"
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieve paginated list of surveyor verification requests with optional status filter and search term (Admin only)."
+          }
+        },
+        {
+          "name": "Get Verification Request Details (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyors/verifications/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyors", "verifications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "surveyor-profile-id-or-user-id",
+                  "description": "Surveyor Profile ID or User ID"
+                }
+              ]
+            },
+            "description": "Get detailed application information for a specific surveyor verification request (Admin only)."
+          }
+        },
+        {
+          "name": "Approve / Reject Verification Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNote\": \"Credentials verified successfully.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/surveyors/:userId/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "surveyors", ":userId", "verify"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "target-user-id",
+                  "description": "Target User ID"
+                }
+              ]
+            },
+            "description": "Approve or reject a surveyor's verification application. Approving will automatically grant SURVEYOR platform role (Admin only)."
+          }
+        }
+      ]
     }
   ]
 }

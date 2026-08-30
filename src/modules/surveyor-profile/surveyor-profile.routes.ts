@@ -10,6 +10,27 @@ import {
 
 export const surveyorProfileRouter = Router();
 
+// ── Admin Endpoints (ADMIN & SUPER_ADMIN) ──
+surveyorProfileRouter.get(
+  "/verifications",
+  auth("ADMIN"),
+  surveyorProfileController.getVerificationRequests,
+);
+
+surveyorProfileRouter.get(
+  "/verifications/:id",
+  auth("ADMIN"),
+  surveyorProfileController.getVerificationRequestById,
+);
+
+surveyorProfileRouter.patch(
+  "/:userId/verify",
+  auth("ADMIN"),
+  validate(verifySurveyorSchema),
+  surveyorProfileController.verifySurveyor,
+);
+
+// ── Surveyor / User Endpoints ──
 surveyorProfileRouter.post(
   "/profile",
   auth("USER"),
@@ -23,6 +44,14 @@ surveyorProfileRouter.get(
   surveyorProfileController.getMyProfile,
 );
 
+surveyorProfileRouter.patch(
+  "/profile",
+  auth("SURVEYOR"),
+  validate(updateSurveyorProfileSchema),
+  surveyorProfileController.updateMyProfile,
+);
+
+// ── Public Directory Endpoints ──
 surveyorProfileRouter.get(
   "/",
   surveyorProfileController.getAllSurveyors,
@@ -31,18 +60,4 @@ surveyorProfileRouter.get(
 surveyorProfileRouter.get(
   "/:slug",
   surveyorProfileController.getSurveyorBySlug,
-);
-
-surveyorProfileRouter.patch(
-  "/profile",
-  auth("SURVEYOR"),
-  validate(updateSurveyorProfileSchema),
-  surveyorProfileController.updateMyProfile,
-);
-
-surveyorProfileRouter.patch(
-  "/:userId/verify",
-  auth("ADMIN"),
-  validate(verifySurveyorSchema),
-  surveyorProfileController.verifySurveyor,
 );

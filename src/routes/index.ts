@@ -14,4 +14,5 @@ apiRouter.use('/services', serviceRouter);
 apiRouter.use('/districts', districtRouter);
 apiRouter.use('/surveyor/services', surveyorServiceRouter);
 apiRouter.use('/surveyor', surveyorProfileRouter);
+apiRouter.use('/surveyors', surveyorProfileRouter);
 apiRouter.use('/calculations', calculationRouter);

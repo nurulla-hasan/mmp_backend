@@ -349,6 +349,122 @@ const getSurveyorBySlug = async (slug: string) => {
   return profile;
 };
 
+const getVerificationRequests = async (query: Record<string, unknown> = {}) => {
+  const { page = 1, limit = 10, searchTerm, status = "ALL", sortBy = "newest" } = query;
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.max(1, Number(limit) || 10);
+  const skip = (pageNum - 1) * limitNum;
+
+  const andConditions: Prisma.SurveyorProfileWhereInput[] = [];
+
+  // Filter by verification status (if not ALL)
+  if (status && status !== "ALL") {
+    andConditions.push({ verificationStatus: status as Prisma.EnumVerificationStatusFilter["equals"] });
+  }
+
+  // Search by user name, phone, email, district, upazila, or headline
+  if (typeof searchTerm === "string" && searchTerm.trim()) {
+    const term = searchTerm.trim();
+    andConditions.push({
+      OR: [
+        { user: { name: { contains: term, mode: "insensitive" } } },
+        { user: { email: { contains: term, mode: "insensitive" } } },
+        { user: { phone: { contains: term, mode: "insensitive" } } },
+        { user: { district: { contains: term, mode: "insensitive" } } },
+        { headline: { contains: term, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  const where: Prisma.SurveyorProfileWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const orderBy: Prisma.SurveyorProfileOrderByWithRelationInput[] =
+    sortBy === "oldest" ? [{ createdAt: "asc" }] : [{ createdAt: "desc" }];
+
+  const [total, rawRequests] = await Promise.all([
+    prisma.surveyorProfile.count({ where }),
+    prisma.surveyorProfile.findMany({
+      where,
+      skip,
+      take: limitNum,
+      orderBy,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            whatsappNumber: true,
+            district: true,
+            upazila: true,
+            imageUrl: true,
+            status: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+        surveyorServices: {
+          include: {
+            service: true,
+          },
+        },
+        serviceAreas: true,
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(total / limitNum) || 1;
+
+  return {
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages,
+    },
+    data: rawRequests,
+  };
+};
+
+const getVerificationRequestById = async (id: string) => {
+  const profile = await prisma.surveyorProfile.findFirst({
+    where: {
+      OR: [{ id }, { userId: id }],
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          whatsappNumber: true,
+          district: true,
+          upazila: true,
+          imageUrl: true,
+          status: true,
+          role: true,
+          createdAt: true,
+        },
+      },
+      surveyorServices: {
+        include: {
+          service: true,
+        },
+      },
+      serviceAreas: true,
+    },
+  });
+
+  if (!profile) {
+    throw new AppError(httpStatus.NOT_FOUND, "Verification request not found.");
+  }
+
+  return profile;
+};
+
 export const surveyorProfileService = {
   getAllSurveyors,
   getSurveyorBySlug,
@@ -356,4 +472,6 @@ export const surveyorProfileService = {
   applyAsSurveyor,
   updateMyProfile,
   verifySurveyor,
+  getVerificationRequests,
+  getVerificationRequestById,
 };
