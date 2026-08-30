@@ -2058,6 +2058,30 @@
           }
         }
       ]
+    },
+    {
+      "name": "12. Admin Dashboard Overview",
+      "description": "Endpoints for real-time aggregated metrics, platform performance, and analytics charts.",
+      "item": [
+        {
+          "name": "Get Admin Dashboard Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "dashboard", "stats"]
+            },
+            "description": "Retrieve comprehensive aggregated metrics, monthly growth trends, top district distribution, and recent activity feed."
+          }
+        }
+      ]
     }
   ]
 }

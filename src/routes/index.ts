@@ -10,6 +10,7 @@ import { reviewRouter } from '../modules/review/review.routes';
 import { planRouter } from '../modules/plan/plan.routes';
 import { subscriptionRouter } from '../modules/subscription/subscription.routes';
 import { broadcastRouter } from '../modules/broadcast/broadcast.routes';
+import { adminDashboardRouter } from '../modules/admin-dashboard/admin-dashboard.routes';
 
 export const apiRouter = Router();
 apiRouter.use('/auth', authRouter);
@@ -26,3 +27,4 @@ apiRouter.use('/subscribers', subscriptionRouter);
 apiRouter.use('/subscriptions', subscriptionRouter);
 apiRouter.use('/broadcasts', broadcastRouter);
 apiRouter.use('/broadcast', broadcastRouter);
+apiRouter.use('/admin/dashboard', adminDashboardRouter);
