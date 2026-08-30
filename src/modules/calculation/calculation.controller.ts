@@ -1,6 +1,7 @@
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { calculationService } from "./calculation.service";
+import { getCalculationsQuerySchema } from "./calculation.validation";
 
 const createCalculation = catchAsync(async (req, res) => {
   const result = await calculationService.createCalculation(
@@ -15,10 +16,21 @@ const createCalculation = catchAsync(async (req, res) => {
   });
 });
 
+const incrementPlotCount = catchAsync(async (req, res) => {
+  const result = await calculationService.incrementPlotCount(req.user!.id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Plot count incremented successfully.",
+    data: result,
+  });
+});
+
 const getUserCalculations = catchAsync(async (req, res) => {
+  const query = getCalculationsQuerySchema.parse(req.query);
   const result = await calculationService.getUserCalculations(
     req.user!.id,
-    req.query,
+    query,
   );
   sendResponse(res, {
     statusCode: 200,
@@ -93,6 +105,7 @@ const getAllMeasurementStats = catchAsync(async (req, res) => {
 
 export const calculationController = {
   createCalculation,
+  incrementPlotCount,
   getUserCalculations,
   getCalculationById,
   updateCalculation,
@@ -100,4 +113,3 @@ export const calculationController = {
   getMyMeasurementStats,
   getAllMeasurementStats,
 };
-

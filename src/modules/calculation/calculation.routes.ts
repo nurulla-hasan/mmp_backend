@@ -18,6 +18,12 @@ calculationRouter.get(
   calculationController.getMyMeasurementStats,
 );
 
+calculationRouter.post(
+  "/stats/increment-plot",
+  auth(),
+  calculationController.incrementPlotCount,
+);
+
 calculationRouter.get(
   "/stats/all",
   auth("ADMIN"),

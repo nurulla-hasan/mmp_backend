@@ -33,5 +33,13 @@ export const updateCalculationSchema = z.object({
   plots: z.array(plotInputSchema).optional(),
 });
 
+export const getCalculationsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(100).optional().default(10),
+  searchTerm: z.string().optional(),
+  sortBy: z.enum(["newest", "oldest", "name_asc", "name_desc"]).optional().default("newest"),
+});
+
 export type CreateCalculationInput = z.infer<typeof createCalculationSchema>;
 export type UpdateCalculationInput = z.infer<typeof updateCalculationSchema>;
+export type GetCalculationsQueryInput = z.infer<typeof getCalculationsQuerySchema>;

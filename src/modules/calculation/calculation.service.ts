@@ -1,9 +1,9 @@
 import httpStatus from "http-status";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/app-error";
-import type { Prisma } from "../../../generated/prisma/client";
 import type {
   CreateCalculationInput,
+  GetCalculationsQueryInput,
   UpdateCalculationInput,
 } from "./calculation.validation";
 
@@ -12,13 +12,13 @@ const createCalculation = async (
   data: CreateCalculationInput,
 ) => {
   const result = await prisma.$transaction(async (tx) => {
-    // 1. Create Calculation
+    // 1. Create calculation with nested plots
     const calculation = await tx.calculation.create({
       data: {
         userId,
         name: data.name,
         mapName: data.mapName,
-        scaleType: data.scaleType || "link",
+        scaleType: data.scaleType,
         scalePxPerUnit: data.scalePxPerUnit,
         imageWidth: data.imageWidth,
         imageHeight: data.imageHeight,
@@ -49,9 +49,6 @@ const createCalculation = async (
         lastActivityAt: new Date(),
       },
       update: {
-        plotsCompleted: {
-          increment: data.plots.length,
-        },
         calculationsCount: {
           increment: 1,
         },
@@ -65,76 +62,78 @@ const createCalculation = async (
   return result;
 };
 
+const incrementPlotCount = async (userId: string) => {
+  const stat = await prisma.userMeasurementStat.upsert({
+    where: { userId },
+    create: {
+      userId,
+      plotsCompleted: 1,
+      calculationsCount: 0,
+      lastActivityAt: new Date(),
+    },
+    update: {
+      plotsCompleted: {
+        increment: 1,
+      },
+      lastActivityAt: new Date(),
+    },
+  });
+
+  return stat;
+};
+
 const getUserCalculations = async (
   userId: string,
-  query: Record<string, unknown> = {},
+  query: GetCalculationsQueryInput,
 ) => {
-  const { searchTerm, page, limit, sortBy } = query;
+  const { page, limit, searchTerm, sortBy } = query;
+  const skip = (page - 1) * limit;
 
-  const andConditions: Prisma.CalculationWhereInput[] = [{ userId }];
+  // Build where conditions
+  const where: Record<string, unknown> = { userId };
 
-  if (searchTerm && typeof searchTerm === "string" && searchTerm.trim()) {
-    const term = searchTerm.trim();
-    andConditions.push({
-      OR: [
-        { name: { contains: term, mode: "insensitive" } },
-        { mapName: { contains: term, mode: "insensitive" } },
-      ],
-    });
+  if (searchTerm) {
+    where.OR = [
+      { name: { contains: searchTerm, mode: "insensitive" } },
+      { mapName: { contains: searchTerm, mode: "insensitive" } },
+    ];
   }
 
-  // Pagination
-  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
-  const limitNum = Math.min(
-    100,
-    Math.max(1, parseInt(limit as string, 10) || 10),
-  );
-  const skip = (pageNum - 1) * limitNum;
+  // Build sort condition
+  let orderBy: Record<string, "asc" | "desc"> = { createdAt: "desc" };
+  if (sortBy === "oldest") {
+    orderBy = { createdAt: "asc" };
+  } else if (sortBy === "name_asc") {
+    orderBy = { name: "asc" };
+  } else if (sortBy === "name_desc") {
+    orderBy = { name: "desc" };
+  }
 
-  // Sorting
-  const orderByMap: Record<
-    string,
-    Prisma.CalculationOrderByWithRelationInput[]
-  > = {
-    newest: [{ createdAt: "desc" }],
-    oldest: [{ createdAt: "asc" }],
-    name_asc: [{ name: "asc" }],
-    name_desc: [{ name: "desc" }],
-  };
-
-  const orderBy: Prisma.CalculationOrderByWithRelationInput[] = orderByMap[
-    sortBy as string
-  ] ?? [{ createdAt: "desc" }];
-
-  const where: Prisma.CalculationWhereInput = {
-    AND: andConditions,
-  };
-
-  const [results, total] = await Promise.all([
+  const [total, calculations] = await Promise.all([
+    prisma.calculation.count({ where }),
     prisma.calculation.findMany({
       where,
+      skip,
+      take: limit,
+      orderBy,
       include: {
         plots: {
           orderBy: { createdAt: "asc" },
         },
       },
-      orderBy,
-      skip,
-      take: limitNum,
     }),
-    prisma.calculation.count({ where }),
   ]);
 
-  const totalPages = Math.ceil(total / limitNum) || 1;
+  const totalPages = Math.ceil(total / limit);
 
   return {
-    data: results,
     meta: {
-      page: pageNum,
-      limit: limitNum,
-      total: Number(total),
+      page,
+      limit,
+      total,
       totalPages,
     },
+    data: calculations,
   };
 };
 
@@ -149,6 +148,14 @@ const getCalculationById = async (
       plots: {
         orderBy: { createdAt: "asc" },
       },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
     },
   });
 
@@ -156,7 +163,8 @@ const getCalculationById = async (
     throw new AppError(httpStatus.NOT_FOUND, "Calculation record not found.");
   }
 
-  if (calculation.userId !== userId && userRole !== "ADMIN") {
+  // Check ownership unless admin
+  if (userRole !== "ADMIN" && calculation.userId !== userId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       "You do not have permission to view this calculation.",
@@ -173,6 +181,7 @@ const updateCalculation = async (
 ) => {
   const existing = await prisma.calculation.findUnique({
     where: { id },
+    include: { plots: true },
   });
 
   if (!existing) {
@@ -182,33 +191,34 @@ const updateCalculation = async (
   if (existing.userId !== userId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "You do not have permission to edit this calculation.",
+      "You do not have permission to update this calculation.",
     );
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    // If plots array is provided, replace existing plots
     let plotsCreatedCount = 0;
-
     if (data.plots) {
-      // Remove previous plots and recreate
       await tx.plot.deleteMany({
         where: { calculationId: id },
       });
 
-      await tx.plot.createMany({
-        data: data.plots.map((plot) => ({
-          calculationId: id,
-          plotNumber: plot.plotNumber,
-          points: plot.points,
-          areaSqLink: plot.areaSqLink,
-          areaShotok: plot.areaShotok,
-          areaKatha: plot.areaKatha,
-        })),
-      });
-
-      plotsCreatedCount = data.plots.length;
+      if (data.plots.length > 0) {
+        await tx.plot.createMany({
+          data: data.plots.map((plot) => ({
+            calculationId: id,
+            plotNumber: plot.plotNumber,
+            points: plot.points,
+            areaSqLink: plot.areaSqLink,
+            areaShotok: plot.areaShotok,
+            areaKatha: plot.areaKatha,
+          })),
+        });
+        plotsCreatedCount = data.plots.length;
+      }
     }
 
+    // Update parent calculation
     const updated = await tx.calculation.update({
       where: { id },
       data: {
@@ -260,7 +270,7 @@ const deleteCalculation = async (
     throw new AppError(httpStatus.NOT_FOUND, "Calculation record not found.");
   }
 
-  if (existing.userId !== userId && userRole !== "ADMIN") {
+  if (userRole !== "ADMIN" && existing.userId !== userId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       "You do not have permission to delete this calculation.",
@@ -309,6 +319,7 @@ const getAllMeasurementStats = async () => {
 
 export const calculationService = {
   createCalculation,
+  incrementPlotCount,
   getUserCalculations,
   getCalculationById,
   updateCalculation,
