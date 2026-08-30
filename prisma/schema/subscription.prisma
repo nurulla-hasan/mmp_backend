@@ -1,0 +1,29 @@
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+model Subscription {
+  id            String             @id @default(uuid())
+  userId        String             @map("user_id")
+  planId        String             @map("plan_id")
+  status        SubscriptionStatus @default(ACTIVE)
+  startDate     DateTime           @default(now()) @map("start_date")
+  endDate       DateTime           @map("end_date")
+  paymentMethod String             @default("MANUAL") @map("payment_method")
+  transactionId String             @default("") @map("transaction_id")
+  amountPaid    Float              @map("amount_paid")
+  adminNote     String             @default("") @map("admin_note")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([planId])
+  @@map("subscriptions")
+}
+

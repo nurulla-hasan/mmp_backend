@@ -21,6 +21,7 @@ model User {
   surveyorProfile SurveyorProfile?
   calculations    Calculation[]
   measurementStat UserMeasurementStat?
+  subscriptions   Subscription[]
 
   @@unique([email])
   @@map("users")

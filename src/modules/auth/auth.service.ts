@@ -12,6 +12,7 @@ import { jwtUtils } from '../../utils/jwt';
 import type { IRegisterUser } from './auth.types';
 import type { UpdateMeInput } from './auth.validation';
 import { otpService } from './otp.service';
+import { planService } from '../plan/plan.service';
 
 const loginUser = (user: User) => {
   const jwtPayload = {
@@ -74,8 +75,12 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
       password: pendingUser.passwordHash,
       authProvider: AuthProvider.CREDENTIAL,
       emailVerified: true,
+      isSubscribed: true,
     },
   });
+
+  // Grant promotional free pro subscription till 2028
+  await planService.grantFreeProSubscriptionTill2028(user.id);
 
   // Delete pending user data from Redis after user is created in database
   await otpService.deletePendingUser(email);
@@ -86,7 +91,7 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
     email: user.email,
     role: user.role,
     status: user.status,
-    isSubscribed: user.isSubscribed,
+    isSubscribed: true,
   };
 
   const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);

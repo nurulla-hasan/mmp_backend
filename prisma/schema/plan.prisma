@@ -1,0 +1,30 @@
+enum PlanBillingCycle {
+  MONTHLY
+  SIX_MONTHS
+  YEARLY
+  LIFETIME
+  CUSTOM
+}
+
+model Plan {
+  id            String           @id @default(uuid())
+  name          String
+  code          String           @unique
+  description   String           @default("")
+  price         Float
+  originalPrice Float?           @map("original_price")
+  discountBadge String?          @map("discount_badge")
+  durationDays  Int              @default(30) @map("duration_days")
+  billingCycle  PlanBillingCycle @default(MONTHLY) @map("billing_cycle")
+  tools         String[]         @default([])
+  features      String[]         @default([])
+  isPopular     Boolean          @default(false) @map("is_popular")
+  isActive      Boolean          @default(true) @map("is_active")
+  sortOrder     Int              @default(0) @map("sort_order")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}

@@ -7,6 +7,7 @@ import { surveyorProfileRouter } from '../modules/surveyor-profile/surveyor-prof
 import { calculationRouter } from '../modules/calculation/calculation.routes';
 import { userRouter } from '../modules/user/user.routes';
 import { reviewRouter } from '../modules/review/review.routes';
+import { planRouter } from '../modules/plan/plan.routes';
 
 export const apiRouter = Router();
 apiRouter.use('/auth', authRouter);
@@ -18,3 +19,4 @@ apiRouter.use('/surveyor', surveyorProfileRouter);
 apiRouter.use('/surveyors', surveyorProfileRouter);
 apiRouter.use('/calculations', calculationRouter);
 apiRouter.use('/reviews', reviewRouter);
+apiRouter.use('/plans', planRouter);

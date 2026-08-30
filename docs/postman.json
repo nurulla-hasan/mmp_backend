@@ -1569,6 +1569,172 @@
           }
         }
       ]
+    },
+    {
+      "name": "09. Subscription Plans",
+      "description": "Subscription plans & pricing tiers endpoints.",
+      "item": [
+        {
+          "name": "Get All Plans (Public / Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans?isActive=all&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "all",
+                  "description": "all | true | false"
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Retrieve all subscription pricing plans with automatic seed if database is empty."
+          }
+        },
+        {
+          "name": "Get Single Plan By ID or Code",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "pro_monthly",
+                  "description": "Plan ID or Plan Code"
+                }
+              ]
+            },
+            "description": "Retrieve detailed plan information by ID or slug code."
+          }
+        },
+        {
+          "name": "Create Plan (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"কাস্টম প্রো প্ল্যান\",\n  \"code\": \"custom_pro\",\n  \"description\": \"স্পেশাল প্যাকেজ\",\n  \"price\": 499,\n  \"originalPrice\": 699,\n  \"discountBadge\": \"Save 28%\",\n  \"durationDays\": 90,\n  \"billingCycle\": \"CUSTOM\",\n  \"plotLimit\": 100,\n  \"calculationLimit\": 250,\n  \"isPopular\": false,\n  \"isActive\": true,\n  \"sortOrder\": 4,\n  \"features\": [\n    \"জমির ক্ষেত্রফল টুল — একাধিক প্লট আঁকুন ও মাপুন\",\n    \"প্যান্টাগ্রাফ টুল — C.S/B.S ম্যাপ এলাইন করুন\",\n    \"PDF/Print রিপোর্ট\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans"]
+            },
+            "description": "Create a new subscription pricing plan (Admin only)."
+          }
+        },
+        {
+          "name": "Update Plan (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 349,\n  \"isPopular\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "plan-uuid",
+                  "description": "Plan UUID"
+                }
+              ]
+            },
+            "description": "Update an existing subscription plan (Admin only)."
+          }
+        },
+        {
+          "name": "Toggle Plan Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "plan-uuid",
+                  "description": "Plan UUID"
+                }
+              ]
+            },
+            "description": "Toggle active/inactive status for a plan (Admin only)."
+          }
+        },
+        {
+          "name": "Delete Plan (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plans/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plans", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "plan-uuid",
+                  "description": "Plan UUID"
+                }
+              ]
+            },
+            "description": "Delete a subscription plan (Admin only. Fails if active subscriptions exist)."
+          }
+        }
+      ]
     }
   ]
 }

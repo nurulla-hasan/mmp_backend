@@ -8,6 +8,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../utils/app-error.js';
 import httpStatus from 'http-status';
 import { AuthProvider } from '../../generated/prisma/enums.js';
+import { planService } from '../modules/plan/plan.service.js';
 
 passport.use(
   new LocalStrategy(
@@ -138,8 +139,12 @@ if (isGoogleAuthConfigured) {
               authProvider: AuthProvider.GOOGLE,
               emailVerified: true,
               imageUrl: googleImage,
+              isSubscribed: true,
             },
           });
+
+          // Grant promotional free pro subscription till 2028
+          await planService.grantFreeProSubscriptionTill2028(user.id);
 
           return done(null, user);
         } catch (error) {
