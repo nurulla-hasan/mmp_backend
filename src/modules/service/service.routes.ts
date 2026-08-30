@@ -9,13 +9,19 @@ import {
 
 export const serviceRouter = Router();
 
-// 1. Get all services (Public)
+// 1. Get all services (Public & Admin)
 serviceRouter.get(
   "/",
   serviceController.getAllServices,
 );
 
-// 2. Create service (Admin only)
+// 2. Get service by ID or Slug
+serviceRouter.get(
+  "/:id",
+  serviceController.getServiceById,
+);
+
+// 3. Create service (Admin only)
 serviceRouter.post(
   "/",
   auth("ADMIN"),
@@ -23,17 +29,17 @@ serviceRouter.post(
   serviceController.createService,
 );
 
-// 3. Update service (Admin only)
+// 4. Update service (Admin only)
 serviceRouter.patch(
-  "/:slug",
+  "/:id",
   auth("ADMIN"),
   validate(updateServiceSchema),
   serviceController.updateService,
 );
 
-// 4. Delete service (Admin only)
+// 5. Delete service (Admin only)
 serviceRouter.delete(
-  "/:slug",
+  "/:id",
   auth("ADMIN"),
   serviceController.deleteService,
 );

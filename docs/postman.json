@@ -1172,6 +1172,151 @@
           }
         }
       ]
+    },
+    {
+      "name": "08. Service Management (Admin & Public)",
+      "description": "Land surveying service categories catalog, descriptions, creation, updates, and deletion.",
+      "item": [
+        {
+          "name": "Get All Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services?searchTerm=&page=1&limit=10&sortBy=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"],
+              "query": [
+                {
+                  "key": "searchTerm",
+                  "value": "",
+                  "description": "Search by name, slug, or description"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "newest | oldest | name_asc | name_desc"
+                }
+              ]
+            },
+            "description": "Retrieve all service categories with search and pagination support."
+          }
+        },
+        {
+          "name": "Get Service Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "service-uuid-or-slug",
+                  "description": "Service ID or unique Slug"
+                }
+              ]
+            },
+            "description": "Get detailed service info including surveyor count."
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Land Measurement\",\n  \"slug\": \"land-measurement\",\n  \"description\": \"Accurate polygon and link based land measurement on digital mouza maps.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "description": "Create a new surveying service catalog item (Admin only)."
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Land Measurement & Demarcation\",\n  \"slug\": \"land-measurement\",\n  \"description\": \"Updated description for land measurement services.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "service-uuid-or-slug",
+                  "description": "Service ID or Slug"
+                }
+              ]
+            },
+            "description": "Update service name, slug, or description (Admin only)."
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "service-uuid-or-slug",
+                  "description": "Service ID or Slug"
+                }
+              ]
+            },
+            "description": "Delete a service category (Admin only)."
+          }
+        }
+      ]
     }
   ]
 }
