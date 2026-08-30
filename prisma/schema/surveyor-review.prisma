@@ -1,11 +1,12 @@
 model SurveyorReview {
-  id                String            @id @default(uuid())
-  surveyorProfileId String            @map("surveyor_profile_id")
-  reviewerName      String            @map("reviewer_name")
+  id                String             @id @default(uuid())
+  surveyorProfileId String             @map("surveyor_profile_id")
+  reviewerName      String             @map("reviewer_name")
+  serviceName       String?            @map("service_name")
   rating            Int
   comment           String
   status            VerificationStatus @default(PENDING)
-  createdAt         DateTime          @default(now()) @map("created_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
 
   surveyorProfile SurveyorProfile @relation(fields: [surveyorProfileId], references: [id], onDelete: Cascade)
 

@@ -336,7 +336,7 @@ const getSurveyorBySlug = async (slug: string) => {
       },
       serviceAreas: true,
       reviews: {
-        where: { status: "APPROVED" },
+        where: { status: { in: ["APPROVED", "PENDING"] } },
         orderBy: { createdAt: "desc" },
       },
     },

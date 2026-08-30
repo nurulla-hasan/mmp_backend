@@ -1445,6 +1445,130 @@
           }
         }
       ]
+    },
+    {
+      "name": "08. Reviews Management",
+      "description": "Public review submissions and Admin review moderation endpoints.",
+      "item": [
+        {
+          "name": "Submit Review (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surveyorProfileId\": \"surveyor-profile-uuid\",\n  \"reviewerName\": \"Rahim Uddin\",\n  \"rating\": 5,\n  \"comment\": \"Great service and accurate plot measurement!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews"]
+            },
+            "description": "Submit a customer review for a surveyor. The review will be set to PENDING status until approved by an admin."
+          }
+        },
+        {
+          "name": "Get All Reviews (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews?status=ALL&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "Filter by status: ALL | PENDING | APPROVED | REJECTED"
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieve paginated list of reviews with optional search and status filtering (Admin only)."
+          }
+        },
+        {
+          "name": "Update Review Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "review-uuid",
+                  "description": "Review ID"
+                }
+              ]
+            },
+            "description": "Approve or reject a review. Approving will automatically update the surveyor's public rating and review count (Admin only)."
+          }
+        },
+        {
+          "name": "Delete Review (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "review-uuid",
+                  "description": "Review ID"
+                }
+              ]
+            },
+            "description": "Permanently delete a review and recalculate surveyor's rating (Admin only)."
+          }
+        }
+      ]
     }
   ]
 }
