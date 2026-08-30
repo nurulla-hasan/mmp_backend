@@ -9,6 +9,9 @@ import {
 
 export const reviewRouter = Router();
 
+// Public: Featured Testimonials for home page
+reviewRouter.get("/testimonials", reviewController.getTestimonials);
+
 // Authenticated Users/Surveyors/Admins can submit a review
 reviewRouter.post(
   "/",

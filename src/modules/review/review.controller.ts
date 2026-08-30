@@ -53,9 +53,21 @@ const deleteReview = catchAsync(async (req, res) => {
   });
 });
 
+// 5. Public: Get featured testimonials
+const getTestimonials = catchAsync(async (_req, res) => {
+  const result = await reviewService.getTestimonials();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Testimonials retrieved successfully.",
+    data: result,
+  });
+});
+
 export const reviewController = {
   createReview,
   getAllReviews,
   updateReviewStatus,
   deleteReview,
+  getTestimonials,
 };

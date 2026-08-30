@@ -257,9 +257,43 @@ const deleteReview = async (id: string) => {
   return null;
 };
 
+// 5. Get featured approved testimonials for public home page
+const getTestimonials = async () => {
+  const reviews = await prisma.surveyorReview.findMany({
+    where: { status: "APPROVED", rating: { gte: 4 } },
+    take: 6,
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { name: true, imageUrl: true, district: true } },
+      surveyorProfile: {
+        select: {
+          slug: true,
+          user: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  return reviews.map((r) => {
+    const bracketMatch = r.comment.match(/^\[(.*?)\]\s*(.*)$/);
+    return {
+      id: r.id,
+      reviewerName: r.user?.name || r.reviewerName,
+      reviewerDistrict: r.user?.district,
+      surveyorName: r.surveyorProfile?.user?.name,
+      surveyorSlug: r.surveyorProfile?.slug,
+      serviceName: r.serviceName || (bracketMatch ? bracketMatch[1] : undefined),
+      comment: bracketMatch ? bracketMatch[2] : r.comment,
+      rating: r.rating,
+      createdAt: r.createdAt,
+    };
+  });
+};
+
 export const reviewService = {
   createReview,
   getAllReviews,
   updateReviewStatus,
   deleteReview,
+  getTestimonials,
 };
