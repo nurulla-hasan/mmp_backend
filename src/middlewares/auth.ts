@@ -58,11 +58,17 @@ export const auth = (...allowedRoles: Role[]): RequestHandler =>
       throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
 
     // ROLE CHECK
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        'You do not have permission to access this resource',
-      );
+    if (allowedRoles.length > 0) {
+      const hasPermission =
+        user.role === 'SUPER_ADMIN' ||
+        allowedRoles.includes(user.role);
+
+      if (!hasPermission) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          'You do not have permission to access this resource',
+        );
+      }
     }
     req.user = {
       id: user.id,

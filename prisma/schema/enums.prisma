@@ -2,6 +2,7 @@ enum Role {
   USER
   SURVEYOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum ActiveStatus {

@@ -3,44 +3,42 @@ import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { userController } from "./user.controller";
 import {
+  createAdminSchema,
   updateUserStatusSchema,
   updateUserRoleSchema,
 } from "./user.validation";
 
 export const userRouter = Router();
 
-// All routes in this module require ADMIN role
-userRouter.use(auth("ADMIN"));
+// 1. Get all users (Admin & Super Admin)
+userRouter.get("/", auth("ADMIN"), userController.getAllUsers);
 
-// 1. Get all users (search, filter, pagination)
-userRouter.get(
-  "/",
-  userController.getAllUsers,
+// 2. Get user by ID (Admin & Super Admin)
+userRouter.get("/:id", auth("ADMIN"), userController.getUserById);
+
+// 3. Create new Admin (Super Admin only)
+userRouter.post(
+  "/create-admin",
+  auth("SUPER_ADMIN"),
+  validate(createAdminSchema),
+  userController.createAdmin,
 );
 
-// 2. Get user by ID
-userRouter.get(
-  "/:id",
-  userController.getUserById,
-);
-
-// 3. Update user status (ACTIVE | BLOCKED)
+// 4. Update user status (Admin & Super Admin)
 userRouter.patch(
   "/:id/status",
+  auth("ADMIN"),
   validate(updateUserStatusSchema),
   userController.updateUserStatus,
 );
 
-// 4. Update user role (USER | SURVEYOR | ADMIN)
+// 5. Update user role (Super Admin only)
 userRouter.patch(
   "/:id/role",
+  auth("SUPER_ADMIN"),
   validate(updateUserRoleSchema),
   userController.updateUserRole,
 );
 
-// 5. Delete user
-userRouter.delete(
-  "/:id",
-  userController.deleteUser,
-);
-
+// 6. Delete user (Super Admin only)
+userRouter.delete("/:id", auth("SUPER_ADMIN"), userController.deleteUser);

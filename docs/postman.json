@@ -1056,6 +1056,32 @@
           }
         },
         {
+          "name": "Create Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Asif Rahman\",\n  \"email\": \"asif.admin@example.com\",\n  \"password\": \"Admin12345@\",\n  \"phone\": \"+8801700000000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/create-admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "create-admin"]
+            },
+            "description": "Create a new administrator account directly with role ADMIN (Admin only)."
+          }
+        },
+        {
           "name": "Get User by ID",
           "request": {
             "method": "GET",

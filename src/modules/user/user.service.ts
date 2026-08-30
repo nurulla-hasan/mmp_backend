@@ -1,17 +1,19 @@
 import httpStatus from "http-status";
+import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/app-error";
 import type {
   GetUsersQueryInput,
+  CreateAdminInput,
   UpdateUserStatusInput,
   UpdateUserRoleInput,
 } from "./user.validation";
 import { Prisma } from "../../../generated/prisma/client";
 
-// 1. Get all users with search, filter, pagination, excluding current admin
+// 1. Get all users with search, filter, pagination (excluding current user)
 const getAllUsers = async (
   query: GetUsersQueryInput,
-  currentAdminId?: string,
+  currentUserId?: string,
 ) => {
   const { page, limit, searchTerm, role, status, sortBy } = query;
   const pageNum = Math.max(1, page || 1);
@@ -20,13 +22,13 @@ const getAllUsers = async (
 
   const andConditions: Prisma.UserWhereInput[] = [];
 
-  // Exclude the currently logged-in admin from user management list
-  if (currentAdminId) {
-    andConditions.push({ id: { not: currentAdminId } });
+  // Exclude current logged-in user
+  if (currentUserId) {
+    andConditions.push({ id: { not: currentUserId } });
   }
 
   // Search by name, email, or phone
-  if (searchTerm && searchTerm.trim()) {
+  if (searchTerm?.trim()) {
     const term = searchTerm.trim();
     andConditions.push({
       OR: [
@@ -39,7 +41,11 @@ const getAllUsers = async (
 
   // Filter by Role
   if (role) {
-    andConditions.push({ role });
+    if (role === "ADMIN") {
+      andConditions.push({ role: { in: ["ADMIN", "SUPER_ADMIN"] } });
+    } else {
+      andConditions.push({ role });
+    }
   }
 
   // Filter by Status
@@ -92,7 +98,6 @@ const getAllUsers = async (
     }),
   ]);
 
-  // Format users for client consumption
   const users = rawUsers.map((user) => ({
     id: user.id,
     name: user.name,
@@ -125,7 +130,46 @@ const getAllUsers = async (
   };
 };
 
-// 2. Get single user by ID
+// 2. Create new Admin user
+const createAdmin = async (payload: CreateAdminInput) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { email: payload.email.toLowerCase().trim() },
+  });
+
+  if (existingUser) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      "A user with this email already exists.",
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(payload.password, 12);
+
+  const admin = await prisma.user.create({
+    data: {
+      name: payload.name.trim(),
+      email: payload.email.toLowerCase().trim(),
+      password: hashedPassword,
+      phone: payload.phone?.trim() || undefined,
+      role: payload.role || "ADMIN",
+      status: "ACTIVE",
+      emailVerified: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  return admin;
+};
+
+// 3. Get single user by ID
 const getUserById = async (id: string) => {
   const user = await prisma.user.findUnique({
     where: { id },
@@ -168,25 +212,36 @@ const getUserById = async (id: string) => {
   return user;
 };
 
-// 3. Update user status (ACTIVE | BLOCKED)
+// 4. Update user status (ACTIVE | BLOCKED)
 const updateUserStatus = async (
   id: string,
   payload: UpdateUserStatusInput,
-  currentAdminId?: string,
+  currentUser?: { id: string; role: string },
 ) => {
-  if (currentAdminId && id === currentAdminId) {
+  if (currentUser && id === currentUser.id) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "You cannot modify the status of your own account.",
+      "You cannot change your own status.",
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  const targetUser = await getUserById(id);
+
+  if (targetUser.role === "SUPER_ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Super Admin status cannot be changed.",
+    );
   }
 
-  const updatedUser = await prisma.user.update({
+  if (targetUser.role === "ADMIN" && currentUser?.role !== "SUPER_ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Only a Super Admin can modify administrator status.",
+    );
+  }
+
+  return prisma.user.update({
     where: { id },
     data: { status: payload.status },
     select: {
@@ -197,29 +252,24 @@ const updateUserStatus = async (
       status: true,
     },
   });
-
-  return updatedUser;
 };
 
-// 4. Update user role (USER | SURVEYOR | ADMIN)
+// 5. Update user role (USER | SURVEYOR | ADMIN | SUPER_ADMIN)
 const updateUserRole = async (
   id: string,
   payload: UpdateUserRoleInput,
-  currentAdminId?: string,
+  currentUserId?: string,
 ) => {
-  if (currentAdminId && id === currentAdminId) {
+  if (id === currentUserId) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "You cannot modify the role of your own account.",
+      "You cannot change your own role.",
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
-  }
+  await getUserById(id);
 
-  const updatedUser = await prisma.user.update({
+  return prisma.user.update({
     where: { id },
     data: { role: payload.role },
     select: {
@@ -230,22 +280,24 @@ const updateUserRole = async (
       status: true,
     },
   });
-
-  return updatedUser;
 };
 
-// 5. Delete user
-const deleteUser = async (id: string, currentAdminId?: string) => {
-  if (currentAdminId && id === currentAdminId) {
+// 6. Delete user
+const deleteUser = async (id: string, currentUserId?: string) => {
+  if (id === currentUserId) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "You cannot delete your own account.",
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  const targetUser = await getUserById(id);
+
+  if (targetUser.role === "SUPER_ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Super Admin accounts cannot be deleted.",
+    );
   }
 
   await prisma.user.delete({ where: { id } });
@@ -255,6 +307,7 @@ const deleteUser = async (id: string, currentAdminId?: string) => {
 
 export const userService = {
   getAllUsers,
+  createAdmin,
   getUserById,
   updateUserStatus,
   updateUserRole,
