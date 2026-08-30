@@ -1,0 +1,31 @@
+enum BroadcastTarget {
+  ALL
+  USERS
+  SURVEYORS
+  PRO_USERS
+}
+
+enum BroadcastType {
+  INFO
+  WARNING
+  PROMO
+  MAINTENANCE
+}
+
+model Broadcast {
+  id        String          @id @default(uuid())
+  title     String
+  message   String
+  type      BroadcastType   @default(INFO)
+  target    BroadcastTarget @default(ALL)
+  linkUrl   String?         @map("link_url")
+  linkText  String?         @map("link_text")
+  isActive  Boolean         @default(true) @map("is_active")
+  isPinned  Boolean         @default(false) @map("is_pinned")
+  expiresAt DateTime?       @map("expires_at")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@map("broadcasts")
+}
+

@@ -1888,6 +1888,176 @@
           }
         }
       ]
+    },
+    {
+      "name": "11. Broadcast Notifications",
+      "description": "Endpoints for system-wide announcements, promotional campaign banners, and maintenance alerts.",
+      "item": [
+        {
+          "name": "Get Active Announcements (Public/Users)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts", "active"]
+            },
+            "description": "Get currently active announcements for banner/notification feed."
+          }
+        },
+        {
+          "name": "Get All Broadcasts (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "ALL",
+                  "disabled": true
+                },
+                {
+                  "key": "target",
+                  "value": "ALL",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "all",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieve paginated announcements for Admin management."
+          }
+        },
+        {
+          "name": "Create Broadcast Announcement (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"🎉 নতুন ডিজিটাল ম্যাপ ট্রেসিং টুল উন্মুক্ত!\",\n  \"message\": \"এখন থেকে সার্ভেয়ার ও সাধারণ ব্যবহারকারীরা অতি সহজেই দাগ নম্বর অনুসারে ট্রেসিং করতে পারবেন।\",\n  \"type\": \"PROMO\",\n  \"target\": \"ALL\",\n  \"linkUrl\": \"/tools\",\n  \"linkText\": \"টুলস ব্যবহার করুন\",\n  \"isActive\": true,\n  \"isPinned\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts"]
+            },
+            "description": "Create and publish a new broadcast notification."
+          }
+        },
+        {
+          "name": "Update Broadcast Announcement (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"আপডেটেড শিরোনাম\",\n  \"isPinned\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "broadcast-uuid",
+                  "description": "Broadcast UUID"
+                }
+              ]
+            },
+            "description": "Edit an existing announcement (Admin only)."
+          }
+        },
+        {
+          "name": "Toggle Broadcast Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "broadcast-uuid",
+                  "description": "Broadcast UUID"
+                }
+              ]
+            },
+            "description": "Quickly toggle active/inactive state of an announcement."
+          }
+        },
+        {
+          "name": "Delete Broadcast Announcement (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/broadcasts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "broadcasts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "broadcast-uuid",
+                  "description": "Broadcast UUID"
+                }
+              ]
+            },
+            "description": "Permanently delete an announcement (Admin only)."
+          }
+        }
+      ]
     }
   ]
 }
