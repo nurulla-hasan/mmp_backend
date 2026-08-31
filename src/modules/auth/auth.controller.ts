@@ -218,6 +218,39 @@ const changePassword = catchAsync(async (req, res) => {
   });
 });
 
+const forgotPassword = catchAsync(async (req, res) => {
+  const result = await authService.forgotPassword(req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: result.message,
+    data: null,
+  });
+});
+
+const resendResetOtp = catchAsync(async (req, res) => {
+  const result = await authService.resendPasswordResetOtp(req.body.email);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: result.message,
+    data: null,
+  });
+});
+
+const resetPassword = catchAsync(async (req, res) => {
+  const result = await authService.resetPassword(req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: result.message,
+    data: null,
+  });
+});
+
 export const authController = {
   loginUser,
   loginUserWithPassport,
@@ -232,5 +265,8 @@ export const authController = {
   getMe,
   updateMe,
   changePassword,
+  forgotPassword,
+  resendResetOtp,
+  resetPassword,
   logoutUser,
 };

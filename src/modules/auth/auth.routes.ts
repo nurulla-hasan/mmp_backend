@@ -7,10 +7,13 @@ import { authController } from "./auth.controller";
 import {
   changePasswordSchema,
   exchangeSchema,
+  forgotPasswordSchema,
   loginSchema,
   refreshSchema,
   registerSchema,
   resendOtpSchema,
+  resendResetOtpSchema,
+  resetPasswordSchema,
   updateMeSchema,
   verifyEmailSchema,
 } from "./auth.validation";
@@ -33,6 +36,24 @@ authRouter.post(
   "/resend-otp",
   validate(resendOtpSchema),
   authController.resendVerificationOtp,
+);
+
+authRouter.post(
+  "/forgot-password",
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+
+authRouter.post(
+  "/resend-reset-otp",
+  validate(resendResetOtpSchema),
+  authController.resendResetOtp,
+);
+
+authRouter.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  authController.resetPassword,
 );
 
 authRouter.post(

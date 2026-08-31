@@ -67,5 +67,30 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const forgotPasswordSchema = z.object({
+  email: z.email("Please provide a valid email address.").trim().toLowerCase(),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    email: z.email("Please provide a valid email address.").trim().toLowerCase(),
+    otp: z.string().regex(/^\d{6}$/, "Verification code must be 6 digits."),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters.")
+      .max(72),
+    confirmPassword: z.string().min(1, "Please confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export const resendResetOtpSchema = z.object({
+  email: z.email("Please provide a valid email address.").trim().toLowerCase(),
+});
+
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

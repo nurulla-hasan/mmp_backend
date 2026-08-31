@@ -4,13 +4,18 @@ import type { JwtPayload } from 'jsonwebtoken';
 import { AuthProvider, type User } from '../../../generated/prisma/client';
 
 import { env } from '../../config/index';
-import { sendVerificationEmail } from '../../lib/email';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../../lib/email';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/app-error';
 import { jwtUtils } from '../../utils/jwt';
 
 import type { IRegisterUser } from './auth.types';
-import type { UpdateMeInput, ChangePasswordInput } from './auth.validation';
+import type {
+  UpdateMeInput,
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from './auth.validation';
 import { otpService } from './otp.service';
 import { planService } from '../plan/plan.service';
 
@@ -299,6 +304,67 @@ const changePassword = async (userId: string, payload: ChangePasswordInput) => {
   return { message: "Password changed successfully." };
 };
 
+const forgotPassword = async (payload: ForgotPasswordInput) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+    select: { id: true, email: true, status: true },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "এই ইমেইল ঠিকানায় কোনো অ্যাকাউন্ট খুঁজে পাওয়া যায়নি।");
+  }
+
+  if (user.status === "BLOCKED") {
+    throw new AppError(httpStatus.FORBIDDEN, "আপনার অ্যাকাউন্টটি সাময়িকভাবে স্থগিত রয়েছে।");
+  }
+
+  const otp = await otpService.savePasswordResetOtp(user.email);
+  await sendPasswordResetEmail(user.email, otp);
+
+  return { message: "আপনার ইমেইলে ৬-ডিজিটের ভেরিফিকেশন কোড পাঠানো হয়েছে।" };
+};
+
+const resendPasswordResetOtp = async (email: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, status: true },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  const newOtp = await otpService.resendPasswordResetOtp(email);
+  await sendPasswordResetEmail(email, newOtp);
+
+  return { message: "নতুন ভেরিফিকেশন কোড পুনরায় পাঠানো হয়েছে।" };
+};
+
+const resetPassword = async (payload: ResetPasswordInput) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+    select: { id: true, email: true, status: true },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // Verify OTP
+  await otpService.verifyPasswordResetOtp(payload.email, payload.otp);
+
+  const hashedPassword = await bcrypt.hash(payload.password, 12);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword },
+  });
+
+  await otpService.deletePasswordResetOtp(payload.email);
+
+  return { message: "পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে। এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন।" };
+};
+
 export const authService = {
   loginUser,
   registerUser,
@@ -310,4 +376,7 @@ export const authService = {
   getMe,
   updateMe,
   changePassword,
+  forgotPassword,
+  resendPasswordResetOtp,
+  resetPassword,
 };
