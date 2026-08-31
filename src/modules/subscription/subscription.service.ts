@@ -5,11 +5,272 @@ import type {
   CreateSubscriptionInput,
   ExtendSubscriptionInput,
   GetSubscribersQueryInput,
+  ManualCheckoutInput,
+  UpdatePaymentNumbersInput,
   UpdateSubscriptionInput,
 } from "./subscription.validation";
 import { Prisma } from "../../../generated/prisma/client";
 
-// 1. Create a subscription manually (Admin)
+const UNLIMITED_PRO_END_DATE = new Date("2125-12-31T23:59:59.999Z");
+
+// 1. Get Payment Numbers & Instructions (Public / Auth)
+const getPaymentNumbers = async () => {
+  const [bkashSetting, nagadSetting, rocketSetting, instructionsSetting] =
+    await Promise.all([
+      prisma.systemSetting.findUnique({
+        where: { key: "MANUAL_PAYMENT_BKASH" },
+      }),
+      prisma.systemSetting.findUnique({
+        where: { key: "MANUAL_PAYMENT_NAGAD" },
+      }),
+      prisma.systemSetting.findUnique({
+        where: { key: "MANUAL_PAYMENT_ROCKET" },
+      }),
+      prisma.systemSetting.findUnique({
+        where: { key: "MANUAL_PAYMENT_INSTRUCTIONS" },
+      }),
+    ]);
+
+  return {
+    bkashNumber:
+      bkashSetting?.value || "01700-000000 (Personal / Send Money)",
+    nagadNumber: bkashSetting?.value ? nagadSetting?.value || "" : "01800-000000 (Personal / Send Money)",
+    rocketNumber: rocketSetting?.value || "",
+    instructions:
+      instructionsSetting?.value ||
+      "Please Send Money to the bKash or Nagad number above. After sending, enter your sender phone number and Transaction ID (TrxID) below to submit your payment request. Your subscription will be activated upon admin approval.",
+  };
+};
+
+// 2. Update Payment Numbers & Instructions (Admin)
+const updatePaymentNumbers = async (payload: UpdatePaymentNumbersInput) => {
+  if (payload.bkashNumber !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "MANUAL_PAYMENT_BKASH" },
+      update: { value: payload.bkashNumber },
+      create: { key: "MANUAL_PAYMENT_BKASH", value: payload.bkashNumber },
+    });
+  }
+
+  if (payload.nagadNumber !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "MANUAL_PAYMENT_NAGAD" },
+      update: { value: payload.nagadNumber },
+      create: { key: "MANUAL_PAYMENT_NAGAD", value: payload.nagadNumber },
+    });
+  }
+
+  if (payload.rocketNumber !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "MANUAL_PAYMENT_ROCKET" },
+      update: { value: payload.rocketNumber },
+      create: { key: "MANUAL_PAYMENT_ROCKET", value: payload.rocketNumber },
+    });
+  }
+
+  if (payload.instructions !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "MANUAL_PAYMENT_INSTRUCTIONS" },
+      update: { value: payload.instructions },
+      create: { key: "MANUAL_PAYMENT_INSTRUCTIONS", value: payload.instructions },
+    });
+  }
+
+  return getPaymentNumbers();
+};
+
+// 3. User submits manual payment checkout request
+const submitManualCheckout = async (
+  userId: string,
+  payload: ManualCheckoutInput,
+) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  const plan = await prisma.plan.findUnique({
+    where: { id: payload.planId },
+  });
+
+  if (!plan || !plan.isActive) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Selected plan is not available.");
+  }
+
+  // Calculate provisional end date based on duration
+  const startDate = new Date();
+  let endDate: Date;
+  if (plan.billingCycle === "LIFETIME" || plan.durationDays >= 3650) {
+    endDate = UNLIMITED_PRO_END_DATE;
+  } else {
+    endDate = new Date(
+      startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000,
+    );
+  }
+
+  const subscription = await prisma.subscription.create({
+    data: {
+      userId,
+      planId: plan.id,
+      status: "PENDING",
+      startDate,
+      endDate,
+      paymentMethod: payload.paymentMethod,
+      transactionId: payload.transactionId.trim(),
+      senderPhone: payload.senderPhone.trim(),
+      amountPaid: plan.price,
+      adminNote: `Submitted via Manual Payment (${payload.paymentMethod})`,
+    },
+    include: {
+      plan: true,
+    },
+  });
+
+  return subscription;
+};
+
+// 4. Get Current User's active & pending subscription info
+const getMySubscription = async (userId: string) => {
+  const activeSub = await prisma.subscription.findFirst({
+    where: {
+      userId,
+      status: "ACTIVE",
+      endDate: { gte: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    include: { plan: true },
+  });
+
+  const pendingSub = await prisma.subscription.findFirst({
+    where: {
+      userId,
+      status: "PENDING",
+    },
+    orderBy: { createdAt: "desc" },
+    include: { plan: true },
+  });
+
+  return {
+    activeSubscription: activeSub,
+    pendingSubscription: pendingSub,
+    isSubscribed: Boolean(activeSub),
+  };
+};
+
+// 5. Admin Approves Subscription Request
+const approveSubscription = async (id: string, adminNote?: string) => {
+  const existing = await prisma.subscription.findUnique({
+    where: { id },
+    include: { plan: true },
+  });
+
+  if (!existing) {
+    throw new AppError(httpStatus.NOT_FOUND, "Subscription request not found.");
+  }
+
+  const plan = existing.plan;
+  const startDate = new Date();
+  let endDate: Date;
+
+  if (plan.billingCycle === "LIFETIME" || plan.durationDays >= 3650) {
+    endDate = UNLIMITED_PRO_END_DATE;
+  } else {
+    endDate = new Date(
+      startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.subscription.update({
+      where: { id },
+      data: {
+        status: "ACTIVE",
+        startDate,
+        endDate,
+        adminNote: adminNote || existing.adminNote || "Approved by Admin",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            imageUrl: true,
+            role: true,
+            status: true,
+            isSubscribed: true,
+          },
+        },
+        plan: true,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: existing.userId },
+      data: { isSubscribed: true },
+    });
+
+    return updated;
+  });
+};
+
+// 6. Admin Rejects Subscription Request
+const rejectSubscription = async (id: string, adminNote: string) => {
+  const existing = await prisma.subscription.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    throw new AppError(httpStatus.NOT_FOUND, "Subscription request not found.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.subscription.update({
+      where: { id },
+      data: {
+        status: "CANCELLED",
+        adminNote: adminNote || "Rejected by Admin",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            imageUrl: true,
+            role: true,
+            status: true,
+            isSubscribed: true,
+          },
+        },
+        plan: true,
+      },
+    });
+
+    // Check if user still has other active subscriptions
+    const otherActiveCount = await tx.subscription.count({
+      where: {
+        userId: existing.userId,
+        status: "ACTIVE",
+        endDate: { gte: new Date() },
+      },
+    });
+
+    await tx.user.update({
+      where: { id: existing.userId },
+      data: { isSubscribed: otherActiveCount > 0 },
+    });
+
+    return updated;
+  });
+};
+
+// 7. Create a subscription manually (Admin)
 const createSubscription = async (payload: CreateSubscriptionInput) => {
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
@@ -43,6 +304,7 @@ const createSubscription = async (payload: CreateSubscriptionInput) => {
         endDate,
         paymentMethod: payload.paymentMethod || "MANUAL",
         transactionId: payload.transactionId || "",
+        senderPhone: payload.senderPhone || "",
         amountPaid: payload.amountPaid ?? plan.price,
         adminNote: payload.adminNote || "",
       },
@@ -73,7 +335,7 @@ const createSubscription = async (payload: CreateSubscriptionInput) => {
   });
 };
 
-// 2. Get all subscribers with filters and search (Admin)
+// 8. Get all subscribers with filters and search (Admin)
 const getAllSubscribers = async (query: GetSubscribersQueryInput) => {
   const { page, limit, searchTerm, status, planId, sortBy } = query;
   const pageNum = Math.max(1, page || 1);
@@ -92,7 +354,7 @@ const getAllSubscribers = async (query: GetSubscribersQueryInput) => {
     andConditions.push({ planId });
   }
 
-  // Search in user name, email, phone, transactionId, plan name
+  // Search in user name, email, phone, transactionId, senderPhone, plan name
   if (searchTerm?.trim()) {
     const term = searchTerm.trim();
     andConditions.push({
@@ -101,34 +363,26 @@ const getAllSubscribers = async (query: GetSubscribersQueryInput) => {
         { user: { email: { contains: term, mode: "insensitive" } } },
         { user: { phone: { contains: term, mode: "insensitive" } } },
         { transactionId: { contains: term, mode: "insensitive" } },
+        { senderPhone: { contains: term, mode: "insensitive" } },
         { plan: { name: { contains: term, mode: "insensitive" } } },
+        { plan: { code: { contains: term, mode: "insensitive" } } },
       ],
     });
   }
 
-  const where: Prisma.SubscriptionWhereInput =
+  const whereCondition: Prisma.SubscriptionWhereInput =
     andConditions.length > 0 ? { AND: andConditions } : {};
 
-  // Sorting
-  const orderByMap: Record<
-    string,
-    Prisma.SubscriptionOrderByWithRelationInput[]
-  > = {
-    newest: [{ createdAt: "desc" }],
-    oldest: [{ createdAt: "asc" }],
-    expires_soon: [{ endDate: "asc" }],
-    expires_latest: [{ endDate: "desc" }],
+  let orderBy: Prisma.SubscriptionOrderByWithRelationInput = {
+    createdAt: "desc",
   };
+  if (sortBy === "oldest") orderBy = { createdAt: "asc" };
+  else if (sortBy === "expires_soon") orderBy = { endDate: "asc" };
+  else if (sortBy === "expires_latest") orderBy = { endDate: "desc" };
 
-  const orderBy = orderByMap[sortBy] || [{ createdAt: "desc" }];
-
-  const [total, subscriptions] = await Promise.all([
-    prisma.subscription.count({ where }),
+  const [subscribers, total] = await Promise.all([
     prisma.subscription.findMany({
-      where,
-      skip,
-      take: limitNum,
-      orderBy,
+      where: whereCondition,
       include: {
         user: {
           select: {
@@ -144,10 +398,14 @@ const getAllSubscribers = async (query: GetSubscribersQueryInput) => {
         },
         plan: true,
       },
+      orderBy,
+      skip,
+      take: limitNum,
     }),
+    prisma.subscription.count({ where: whereCondition }),
   ]);
 
-  const totalPages = Math.ceil(total / limitNum) || 1;
+  const totalPages = Math.ceil(total / limitNum);
 
   return {
     meta: {
@@ -156,11 +414,11 @@ const getAllSubscribers = async (query: GetSubscribersQueryInput) => {
       total,
       totalPages,
     },
-    data: subscriptions,
+    data: subscribers,
   };
 };
 
-// 3. Get subscriber by ID
+// 9. Get single subscriber by ID
 const getSubscriberById = async (id: string) => {
   const subscription = await prisma.subscription.findUnique({
     where: { id },
@@ -175,6 +433,7 @@ const getSubscriberById = async (id: string) => {
           role: true,
           status: true,
           isSubscribed: true,
+          createdAt: true,
         },
       },
       plan: true,
@@ -188,7 +447,7 @@ const getSubscriberById = async (id: string) => {
   return subscription;
 };
 
-// 4. Update subscription (Admin)
+// 10. Update subscriber info
 const updateSubscription = async (
   id: string,
   payload: UpdateSubscriptionInput,
@@ -227,9 +486,12 @@ const updateSubscription = async (
       },
     });
 
-    // Check if user has active subscriptions
     const activeSubCount = await tx.subscription.count({
-      where: { userId: existing.userId, status: "ACTIVE" },
+      where: {
+        userId: existing.userId,
+        status: "ACTIVE",
+        endDate: { gte: new Date() },
+      },
     });
 
     await tx.user.update({
@@ -241,7 +503,7 @@ const updateSubscription = async (
   });
 };
 
-// 5. Revoke / Cancel subscription
+// 11. Revoke / Cancel subscription
 const revokeSubscription = async (id: string) => {
   const existing = await prisma.subscription.findUnique({
     where: { id },
@@ -257,9 +519,12 @@ const revokeSubscription = async (id: string) => {
       data: { status: "CANCELLED" },
     });
 
-    // Check if user has other active subscriptions
     const activeSubCount = await tx.subscription.count({
-      where: { userId: existing.userId, status: "ACTIVE" },
+      where: {
+        userId: existing.userId,
+        status: "ACTIVE",
+        endDate: { gte: new Date() },
+      },
     });
 
     await tx.user.update({
@@ -271,7 +536,7 @@ const revokeSubscription = async (id: string) => {
   });
 };
 
-// 6. Extend subscription validity by X days
+// 12. Extend subscription validity by X days
 const extendSubscription = async (
   id: string,
   payload: ExtendSubscriptionInput,
@@ -327,6 +592,12 @@ const extendSubscription = async (
 };
 
 export const subscriptionService = {
+  getPaymentNumbers,
+  updatePaymentNumbers,
+  submitManualCheckout,
+  getMySubscription,
+  approveSubscription,
+  rejectSubscription,
   createSubscription,
   getAllSubscribers,
   getSubscriberById,
@@ -334,4 +605,3 @@ export const subscriptionService = {
   revokeSubscription,
   extendSubscription,
 };
-

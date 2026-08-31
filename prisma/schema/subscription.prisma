@@ -14,6 +14,7 @@ model Subscription {
   endDate       DateTime           @map("end_date")
   paymentMethod String             @default("MANUAL") @map("payment_method")
   transactionId String             @default("") @map("transaction_id")
+  senderPhone   String             @default("") @map("sender_phone")
   amountPaid    Float              @map("amount_paid")
   adminNote     String             @default("") @map("admin_note")
   createdAt     DateTime           @default(now()) @map("created_at")

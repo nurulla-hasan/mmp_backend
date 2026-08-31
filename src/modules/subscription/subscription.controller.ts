@@ -1,23 +1,84 @@
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { subscriptionService } from "./subscription.service";
-import {
-  extendSubscriptionSchema,
-  getSubscribersQuerySchema,
-} from "./subscription.validation";
+import { getSubscribersQuerySchema } from "./subscription.validation";
 
-// 1. Admin: Create subscription
-const createSubscription = catchAsync(async (req, res) => {
-  const result = await subscriptionService.createSubscription(req.body);
+// 1. Get Payment Numbers & Instructions (Public / Auth)
+const getPaymentNumbers = catchAsync(async (_req, res) => {
+  const result = await subscriptionService.getPaymentNumbers();
   sendResponse(res, {
-    statusCode: 201,
+    statusCode: 200,
     success: true,
-    message: "Subscription created successfully.",
+    message: "Payment numbers retrieved successfully.",
     data: result,
   });
 });
 
-// 2. Admin: Get all subscribers
+// 2. Update Payment Numbers & Instructions (Admin)
+const updatePaymentNumbers = catchAsync(async (req, res) => {
+  const result = await subscriptionService.updatePaymentNumbers(req.body);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Payment numbers updated successfully.",
+    data: result,
+  });
+});
+
+// 3. User submits manual payment checkout
+const submitManualCheckout = catchAsync(async (req, res) => {
+  const result = await subscriptionService.submitManualCheckout(
+    req.user!.id,
+    req.body,
+  );
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "Payment request submitted successfully. Pending admin approval.",
+    data: result,
+  });
+});
+
+// 4. Current user's subscription info
+const getMySubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.getMySubscription(req.user!.id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User subscription retrieved successfully.",
+    data: result,
+  });
+});
+
+// 5. Admin Approves Subscription
+const approveSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.approveSubscription(
+    String(req.params.id),
+    req.body.adminNote,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Subscription approved and activated successfully.",
+    data: result,
+  });
+});
+
+// 6. Admin Rejects Subscription
+const rejectSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.rejectSubscription(
+    String(req.params.id),
+    req.body.adminNote,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Subscription request rejected.",
+    data: result,
+  });
+});
+
+// 7. Get all subscribers (Admin)
 const getAllSubscribers = catchAsync(async (req, res) => {
   const query = getSubscribersQuerySchema.parse(req.query);
   const result = await subscriptionService.getAllSubscribers(query);
@@ -30,7 +91,7 @@ const getAllSubscribers = catchAsync(async (req, res) => {
   });
 });
 
-// 3. Admin: Get single subscriber by ID
+// 8. Get single subscriber by ID (Admin)
 const getSubscriberById = catchAsync(async (req, res) => {
   const result = await subscriptionService.getSubscriberById(
     String(req.params.id),
@@ -38,12 +99,23 @@ const getSubscriberById = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Subscription details retrieved successfully.",
+    message: "Subscriber retrieved successfully.",
     data: result,
   });
 });
 
-// 4. Admin: Update subscription
+// 9. Create subscription manually (Admin)
+const createSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.createSubscription(req.body);
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "Subscription created successfully.",
+    data: result,
+  });
+});
+
+// 10. Update subscription (Admin)
 const updateSubscription = catchAsync(async (req, res) => {
   const result = await subscriptionService.updateSubscription(
     String(req.params.id),
@@ -57,7 +129,21 @@ const updateSubscription = catchAsync(async (req, res) => {
   });
 });
 
-// 5. Admin: Revoke subscription
+// 11. Extend subscription (Admin)
+const extendSubscription = catchAsync(async (req, res) => {
+  const result = await subscriptionService.extendSubscription(
+    String(req.params.id),
+    req.body,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Subscription extended successfully.",
+    data: result,
+  });
+});
+
+// 12. Revoke subscription (Admin)
 const revokeSubscription = catchAsync(async (req, res) => {
   const result = await subscriptionService.revokeSubscription(
     String(req.params.id),
@@ -70,27 +156,17 @@ const revokeSubscription = catchAsync(async (req, res) => {
   });
 });
 
-// 6. Admin: Extend subscription
-const extendSubscription = catchAsync(async (req, res) => {
-  const body = extendSubscriptionSchema.parse(req.body);
-  const result = await subscriptionService.extendSubscription(
-    String(req.params.id),
-    body,
-  );
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: `Subscription extended by ${body.days} days successfully.`,
-    data: result,
-  });
-});
-
 export const subscriptionController = {
-  createSubscription,
+  getPaymentNumbers,
+  updatePaymentNumbers,
+  submitManualCheckout,
+  getMySubscription,
+  approveSubscription,
+  rejectSubscription,
   getAllSubscribers,
   getSubscriberById,
+  createSubscription,
   updateSubscription,
-  revokeSubscription,
   extendSubscription,
+  revokeSubscription,
 };
-
