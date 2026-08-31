@@ -2,6 +2,7 @@ import httpStatus from "http-status";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/app-error";
+import { uploadToCloudinary, deleteFromCloudinary } from "../../lib/cloudinary";
 import type {
   GetUsersQueryInput,
   CreateAdminInput,
@@ -305,6 +306,56 @@ const deleteUser = async (id: string, currentUserId?: string) => {
   return null;
 };
 
+// 7. Upload & update profile image
+const uploadProfileImage = async (userId: string, fileBuffer: Buffer) => {
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      imagePublicId: true,
+      imageUrl: true,
+    },
+  });
+
+  if (!currentUser) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // Upload to Cloudinary
+  const cloudinaryResult = await uploadToCloudinary(fileBuffer, "mmp/profiles");
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      imageUrl: cloudinaryResult.secure_url,
+      imagePublicId: cloudinaryResult.public_id,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      imageUrl: true,
+      imagePublicId: true,
+      isSubscribed: true,
+      phone: true,
+      whatsappNumber: true,
+      district: true,
+      upazila: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  // Clean up previous image on Cloudinary if exists
+  if (currentUser.imagePublicId) {
+    await deleteFromCloudinary(currentUser.imagePublicId);
+  }
+
+  return updatedUser;
+};
+
 export const userService = {
   getAllUsers,
   createAdmin,
@@ -312,4 +363,5 @@ export const userService = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  uploadProfileImage,
 };

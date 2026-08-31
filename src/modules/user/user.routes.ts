@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
+import { upload } from "../../lib/multer";
 import { userController } from "./user.controller";
 import {
   createAdminSchema,
@@ -9,6 +10,14 @@ import {
 } from "./user.validation";
 
 export const userRouter = Router();
+
+// Upload current user profile image (Any authenticated user)
+userRouter.patch(
+  "/profile-image",
+  auth(),
+  upload.single("image"),
+  userController.uploadProfileImage,
+);
 
 // 1. Get all users (Admin & Super Admin)
 userRouter.get("/", auth("ADMIN"), userController.getAllUsers);

@@ -40,6 +40,9 @@ const envSchema = z
     ADMIN_EMAIL: z.string().default('admin@mouzamappro.com'),
     ADMIN_NAME: z.string().default('Super Admin'),
     ADMIN_PASSWORD: z.string().default('11111111'),
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production') {

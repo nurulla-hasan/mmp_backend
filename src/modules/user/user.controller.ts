@@ -1,3 +1,5 @@
+import httpStatus from "http-status";
+import { AppError } from "../../utils/app-error";
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { userService } from "./user.service";
@@ -79,6 +81,27 @@ const deleteUser = catchAsync(async (req, res) => {
   });
 });
 
+// 7. Upload profile image
+const uploadProfileImage = catchAsync(async (req, res) => {
+  if (!req.file) {
+    throw new AppError(httpStatus.BAD_REQUEST, "No image file provided.");
+  }
+
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized.");
+  }
+
+  const result = await userService.uploadProfileImage(userId, req.file.buffer);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Profile image updated successfully.",
+    data: result,
+  });
+});
+
 export const userController = {
   getAllUsers,
   createAdmin,
@@ -86,4 +109,5 @@ export const userController = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  uploadProfileImage,
 };
