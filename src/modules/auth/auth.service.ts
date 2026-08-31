@@ -57,7 +57,7 @@ const registerUser = async (payload: IRegisterUser): Promise<{ email: string }> 
     passwordHash,
   });
 
-  await sendVerificationEmail(email, otp);
+  await sendVerificationEmail(email, otp, name);
 
   return { email };
 };
@@ -307,7 +307,7 @@ const changePassword = async (userId: string, payload: ChangePasswordInput) => {
 const forgotPassword = async (payload: ForgotPasswordInput) => {
   const user = await prisma.user.findUnique({
     where: { email: payload.email },
-    select: { id: true, email: true, status: true },
+    select: { id: true, name: true, email: true, status: true },
   });
 
   if (!user) {
@@ -319,7 +319,7 @@ const forgotPassword = async (payload: ForgotPasswordInput) => {
   }
 
   const otp = await otpService.savePasswordResetOtp(user.email);
-  await sendPasswordResetEmail(user.email, otp);
+  await sendPasswordResetEmail(user.email, otp, user.name);
 
   return { message: "আপনার ইমেইলে ৬-ডিজিটের ভেরিফিকেশন কোড পাঠানো হয়েছে।" };
 };
@@ -327,7 +327,7 @@ const forgotPassword = async (payload: ForgotPasswordInput) => {
 const resendPasswordResetOtp = async (email: string) => {
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, email: true, status: true },
+    select: { id: true, name: true, email: true, status: true },
   });
 
   if (!user) {
@@ -335,7 +335,7 @@ const resendPasswordResetOtp = async (email: string) => {
   }
 
   const newOtp = await otpService.resendPasswordResetOtp(email);
-  await sendPasswordResetEmail(email, newOtp);
+  await sendPasswordResetEmail(email, newOtp, user.name);
 
   return { message: "নতুন ভেরিফিকেশন কোড পুনরায় পাঠানো হয়েছে।" };
 };
