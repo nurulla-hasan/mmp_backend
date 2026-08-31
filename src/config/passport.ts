@@ -131,6 +131,8 @@ if (isGoogleAuthConfigured) {
           }
 
           // Step 2: Create a new account if no matching user is found.
+          const isAutoProEnabled = await planService.isAutoProOnRegisterEnabled();
+
           user = await prisma.user.create({
             data: {
               name: profile.displayName || email.split('@')[0] || 'MMP User',
@@ -139,12 +141,14 @@ if (isGoogleAuthConfigured) {
               authProvider: AuthProvider.GOOGLE,
               emailVerified: true,
               imageUrl: googleImage,
-              isSubscribed: true,
+              isSubscribed: isAutoProEnabled,
             },
           });
 
-          // Grant promotional free pro subscription till 2028
-          await planService.grantFreeProSubscriptionTill2028(user.id);
+          // If auto-pro is enabled by admin, grant lifetime unlimited subscription
+          if (isAutoProEnabled) {
+            await planService.grantUnlimitedProSubscription(user.id);
+          }
 
           return done(null, user);
         } catch (error) {

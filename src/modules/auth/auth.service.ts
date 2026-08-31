@@ -73,6 +73,8 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
     throw new AppError(httpStatus.CONFLICT, 'This email already exists');
   }
 
+  const isAutoProEnabled = await planService.isAutoProOnRegisterEnabled();
+
   const user = await prisma.user.create({
     data: {
       name: pendingUser.name,
@@ -80,12 +82,14 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
       password: pendingUser.passwordHash,
       authProvider: AuthProvider.CREDENTIAL,
       emailVerified: true,
-      isSubscribed: true,
+      isSubscribed: isAutoProEnabled,
     },
   });
 
-  // Grant promotional free pro subscription till 2028
-  await planService.grantFreeProSubscriptionTill2028(user.id);
+  // If auto-pro is enabled by admin, grant lifetime unlimited subscription
+  if (isAutoProEnabled) {
+    await planService.grantUnlimitedProSubscription(user.id);
+  }
 
   // Delete pending user data from Redis after user is created in database
   await otpService.deletePendingUser(email);
@@ -96,7 +100,7 @@ const verifyEmailAndCreateUser = async (email: string, otp: string) => {
     email: user.email,
     role: user.role,
     status: user.status,
-    isSubscribed: true,
+    isSubscribed: isAutoProEnabled,
   };
 
   const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);

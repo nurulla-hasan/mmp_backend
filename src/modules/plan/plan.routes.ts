@@ -6,6 +6,16 @@ import { createPlanSchema, updatePlanSchema } from "./plan.validation";
 
 export const planRouter = Router();
 
+// Admin & Public: Get auto-pro setting
+planRouter.get("/settings/auto-pro", planController.getAutoProSetting);
+
+// Admin: Toggle auto-pro setting
+planRouter.patch(
+  "/settings/auto-pro",
+  auth("ADMIN"),
+  planController.setAutoProSetting,
+);
+
 // Public: Get all plans
 planRouter.get("/", planController.getAllPlans);
 

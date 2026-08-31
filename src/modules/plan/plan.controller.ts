@@ -71,6 +71,33 @@ const deletePlan = catchAsync(async (req, res) => {
   });
 });
 
+// 7. Get auto-pro on register setting
+const getAutoProSetting = catchAsync(async (_req, res) => {
+  const result = await planService.getAutoProSetting();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Auto-pro setting retrieved successfully.",
+    data: result,
+  });
+});
+
+// 8. Update auto-pro on register setting (Admin)
+const setAutoProSetting = catchAsync(async (req, res) => {
+  const enabled =
+    req.body.enabled !== undefined ? Boolean(req.body.enabled) : undefined;
+  const planId =
+    req.body.planId !== undefined ? (req.body.planId as string | null) : undefined;
+
+  const result = await planService.setAutoProSetting({ enabled, planId });
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: `Auto-grant Pro setting updated.`,
+    data: result,
+  });
+});
+
 export const planController = {
   createPlan,
   getAllPlans,
@@ -78,5 +105,7 @@ export const planController = {
   updatePlan,
   togglePlanStatus,
   deletePlan,
+  getAutoProSetting,
+  setAutoProSetting,
 };
 

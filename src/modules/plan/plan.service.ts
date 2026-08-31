@@ -285,36 +285,123 @@ const deletePlan = async (id: string) => {
   return null;
 };
 
-// Helper: Grant free pro subscription till 2028
-const PROMO_2028_END_DATE = new Date("2028-12-31T23:59:59.999Z");
-
-const grantFreeProSubscriptionTill2028 = async (userId: string) => {
+// Settings & Grantor for Auto Pro on Registration
+const isAutoProOnRegisterEnabled = async (): Promise<boolean> => {
   try {
-    let proPlan = await prisma.plan.findFirst({
-      where: { code: "pro_yearly" },
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: "AUTO_PRO_ON_REGISTER" },
     });
-
-    if (!proPlan) {
-      proPlan = await prisma.plan.findFirst();
+    if (!setting) {
+      return true; // Default to enabled
     }
+    return setting.value === "true";
+  } catch {
+    return true;
+  }
+};
 
-    if (proPlan) {
-      await prisma.subscription.create({
-        data: {
-          userId,
-          planId: proPlan.id,
-          status: "ACTIVE",
-          startDate: new Date(),
-          endDate: PROMO_2028_END_DATE,
-          paymentMethod: "CAMPAIGN_2028",
-          transactionId: "FREE_PRO_2028",
-          amountPaid: 0,
-          adminNote: "Temporary Early Access Campaign: Free Pro until 2028",
-        },
+const getAutoProSetting = async () => {
+  const isEnabled = await isAutoProOnRegisterEnabled();
+  const planSetting = await prisma.systemSetting.findUnique({
+    where: { key: "AUTO_PRO_PLAN_ID" },
+  });
+
+  let selectedPlanId = planSetting?.value || null;
+
+  if (!selectedPlanId) {
+    const defaultPlan = await prisma.plan.findFirst({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    selectedPlanId = defaultPlan?.id || null;
+  }
+
+  return {
+    autoProOnRegister: isEnabled,
+    autoProPlanId: selectedPlanId,
+  };
+};
+
+const setAutoProSetting = async (payload: {
+  enabled?: boolean;
+  planId?: string | null;
+}) => {
+  let isEnabled = payload.enabled;
+
+  if (isEnabled === undefined && payload.planId) {
+    isEnabled = true;
+  }
+
+  if (isEnabled !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "AUTO_PRO_ON_REGISTER" },
+      update: { value: String(isEnabled) },
+      create: { key: "AUTO_PRO_ON_REGISTER", value: String(isEnabled) },
+    });
+  }
+
+  if (payload.planId !== undefined) {
+    await prisma.systemSetting.upsert({
+      where: { key: "AUTO_PRO_PLAN_ID" },
+      update: { value: payload.planId || "" },
+      create: { key: "AUTO_PRO_PLAN_ID", value: payload.planId || "" },
+    });
+  }
+
+  return getAutoProSetting();
+};
+
+const UNLIMITED_PRO_END_DATE = new Date("2125-12-31T23:59:59.999Z");
+
+const grantAutoProSubscription = async (userId: string) => {
+  try {
+    const setting = await getAutoProSetting();
+    if (!setting.autoProOnRegister) return;
+
+    let proPlan = null;
+    if (setting.autoProPlanId) {
+      proPlan = await prisma.plan.findUnique({
+        where: { id: setting.autoProPlanId },
       });
     }
+
+    if (!proPlan) {
+      proPlan = await prisma.plan.findFirst({
+        where: { isActive: true },
+      });
+    }
+
+    if (!proPlan) return;
+
+    let endDate: Date;
+    if (proPlan.billingCycle === "LIFETIME" || proPlan.durationDays >= 3650) {
+      endDate = UNLIMITED_PRO_END_DATE;
+    } else {
+      endDate = new Date(
+        Date.now() + proPlan.durationDays * 24 * 60 * 60 * 1000,
+      );
+    }
+
+    await prisma.subscription.create({
+      data: {
+        userId,
+        planId: proPlan.id,
+        status: "ACTIVE",
+        startDate: new Date(),
+        endDate,
+        paymentMethod: "REGISTRATION_BONUS",
+        transactionId: `REG_BONUS_${Date.now()}`,
+        amountPaid: 0,
+        adminNote: `Auto Registration Bonus: ${proPlan.name} (${proPlan.durationDays} days)`,
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isSubscribed: true },
+    });
   } catch (error) {
-    console.error("Failed to grant free 2028 subscription:", error);
+    console.error("Failed to grant auto pro subscription on register:", error);
   }
 };
 
@@ -325,5 +412,9 @@ export const planService = {
   updatePlan,
   togglePlanStatus,
   deletePlan,
-  grantFreeProSubscriptionTill2028,
+  isAutoProOnRegisterEnabled,
+  getAutoProSetting,
+  setAutoProSetting,
+  grantAutoProSubscription,
+  grantUnlimitedProSubscription: grantAutoProSubscription,
 };
