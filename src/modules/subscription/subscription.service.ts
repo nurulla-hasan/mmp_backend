@@ -34,7 +34,7 @@ const getPaymentNumbers = async () => {
   return {
     bkashNumber:
       bkashSetting?.value || "01750-974716 (Personal / Send Money)",
-    nagadNumber: bkashSetting?.value ? nagadSetting?.value || "" : "01750-974716 (Personal / Send Money)",
+    nagadNumber:\n      nagadSetting?.value || "01750-974716 (Personal / Send Money)",
     rocketNumber: rocketSetting?.value || "",
     instructions:
       instructionsSetting?.value ||
