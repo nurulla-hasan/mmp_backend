@@ -150,27 +150,13 @@ const googleLoginCallback: RequestHandler = (req, res) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Google login failed');
   }
 
-  const googleLoginCode = authService.createGoogleLoginCode(req.user as unknown as User);
+  const result = authService.loginUser(req.user as unknown as User);
 
-  const frontendCallbackUrl = new URL('/api/auth/google/callback', env.FRONTEND_URL);
-
-  frontendCallbackUrl.searchParams.set('code', googleLoginCode);
-
-  res.redirect(frontendCallbackUrl.toString());
-};
-
-const exchangeGoogleLoginCode = catchAsync(async (req, res) => {
-  const { code } = req.body;
-  const result = await authService.exchangeGoogleLoginCode(code);
   setAuthCookies(res, result);
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: 'Google login successful',
-    data: result,
-  });
-});
+  res.redirect(new URL('/auth/success', env.FRONTEND_URL).toString());
+};
+
 
 const getMe: RequestHandler = catchAsync(async (req, res) => {
   const user = await authService.getMe(req.user?.id as string);
@@ -261,7 +247,6 @@ export const authController = {
   startGoogleLogin,
   verifyGoogleLoginState,
   googleLoginCallback,
-  exchangeGoogleLoginCode,
   getMe,
   updateMe,
   changePassword,

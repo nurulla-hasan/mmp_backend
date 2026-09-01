@@ -353,56 +353,69 @@ const setAutoProSetting = async (payload: {
 
 const UNLIMITED_PRO_END_DATE = new Date("2125-12-31T23:59:59.999Z");
 
-const grantAutoProSubscription = async (userId: string) => {
-  try {
-    const setting = await getAutoProSetting();
-    if (!setting.autoProOnRegister) return;
+const grantAutoProSubscription = async (
+  userId: string,
+  tx: Prisma.TransactionClient,
+): Promise<boolean> => {
+  const enabledSetting = await tx.systemSetting.findUnique({
+    where: { key: "AUTO_PRO_ON_REGISTER" },
+  });
 
-    let proPlan = null;
-    if (setting.autoProPlanId) {
-      proPlan = await prisma.plan.findUnique({
-        where: { id: setting.autoProPlanId },
-      });
-    }
+  const isAutoProEnabled =
+    !enabledSetting || enabledSetting.value === "true";
 
-    if (!proPlan) {
-      proPlan = await prisma.plan.findFirst({
-        where: { isActive: true },
-      });
-    }
-
-    if (!proPlan) return;
-
-    let endDate: Date;
-    if (proPlan.billingCycle === "LIFETIME" || proPlan.durationDays >= 3650) {
-      endDate = UNLIMITED_PRO_END_DATE;
-    } else {
-      endDate = new Date(
-        Date.now() + proPlan.durationDays * 24 * 60 * 60 * 1000,
-      );
-    }
-
-    await prisma.subscription.create({
-      data: {
-        userId,
-        planId: proPlan.id,
-        status: "ACTIVE",
-        startDate: new Date(),
-        endDate,
-        paymentMethod: "REGISTRATION_BONUS",
-        transactionId: `REG_BONUS_${Date.now()}`,
-        amountPaid: 0,
-        adminNote: `Auto Registration Bonus: ${proPlan.name} (${proPlan.durationDays} days)`,
-      },
-    });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isSubscribed: true },
-    });
-  } catch (error) {
-    console.error("Failed to grant auto pro subscription on register:", error);
+  if (!isAutoProEnabled) {
+    return false;
   }
+
+  const planSetting = await tx.systemSetting.findUnique({
+    where: { key: "AUTO_PRO_PLAN_ID" },
+  });
+
+  let proPlan = planSetting?.value
+    ? await tx.plan.findUnique({
+        where: { id: planSetting.value },
+      })
+    : null;
+
+  if (!proPlan || !proPlan.isActive) {
+    proPlan = await tx.plan.findFirst({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  if (!proPlan) {
+    return false;
+  }
+
+  const endDate =
+    proPlan.billingCycle === "LIFETIME" || proPlan.durationDays >= 3650
+      ? UNLIMITED_PRO_END_DATE
+      : new Date(
+          Date.now() + proPlan.durationDays * 24 * 60 * 60 * 1000,
+        );
+
+  await tx.subscription.create({
+    data: {
+      userId,
+      planId: proPlan.id,
+      status: "ACTIVE",
+      startDate: new Date(),
+      endDate,
+      paymentMethod: "REGISTRATION_BONUS",
+      transactionId: `REG_BONUS_${Date.now()}`,
+      amountPaid: 0,
+      adminNote: `Auto Registration Bonus: ${proPlan.name} (${proPlan.durationDays} days)`,
+    },
+  });
+
+  await tx.user.update({
+    where: { id: userId },
+    data: { isSubscribed: true },
+  });
+
+  return true;
 };
 
 export const planService = {
@@ -416,5 +429,4 @@ export const planService = {
   getAutoProSetting,
   setAutoProSetting,
   grantAutoProSubscription,
-  grantUnlimitedProSubscription: grantAutoProSubscription,
 };

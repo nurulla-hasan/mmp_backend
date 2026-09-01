@@ -24,10 +24,6 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1).optional(),
 });
 
-export const exchangeSchema = z.object({
-  code: z.string().min(1),
-});
-
 const bdPhoneRegex = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 export const updateMeSchema = z.object({

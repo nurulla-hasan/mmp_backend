@@ -6,7 +6,6 @@ import { validate } from "../../middlewares/validate";
 import { authController } from "./auth.controller";
 import {
   changePasswordSchema,
-  exchangeSchema,
   forgotPasswordSchema,
   loginSchema,
   refreshSchema,
@@ -67,12 +66,6 @@ authRouter.post(
   "/refresh-token",
   validate(refreshSchema),
   authController.refreshAuthTokens,
-);
-
-authRouter.post(
-  "/google/exchange",
-  validate(exchangeSchema),
-  authController.exchangeGoogleLoginCode,
 );
 
 authRouter.post("/logout", authController.logoutUser);
