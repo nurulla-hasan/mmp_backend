@@ -12,7 +12,7 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().max(65_535).default(5000),
     HOST: z.string().default('0.0.0.0'),
     API_PREFIX: z.string().startsWith('/').default('/api/v1'),
-    APP_NAME: z.string().min(1).default('MMP API'),
+    APP_NAME: z.string().min(1).default('Mouza Map Pro API'),
     DATABASE_URL: z
       .url()
       .default('postgresql://postgres:postgres@localhost:5432/mmp?schema=public'),

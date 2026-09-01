@@ -135,7 +135,7 @@ if (isGoogleAuthConfigured) {
 
           user = await prisma.user.create({
             data: {
-              name: profile.displayName || email.split('@')[0] || 'MMP User',
+              name: profile.displayName || email.split('@')[0] || 'User',
               email: email,
               googleId: profile.id,
               authProvider: AuthProvider.GOOGLE,
