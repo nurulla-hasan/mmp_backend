@@ -170,61 +170,6 @@ const refreshAuthTokens = async (refreshToken: string) => {
   };
 };
 
-const createGoogleLoginCode = (user: User): string => {
-  return jwtUtils.createToken(
-    {
-      id: user.id,
-      type: 'oauth-exchange',
-    },
-    env.JWT_ACCESS_SECRET,
-    '60s',
-  );
-};
-
-const exchangeGoogleLoginCode = async (code: string) => {
-  let tokenPayload: JwtPayload;
-
-  try {
-    tokenPayload = jwtUtils.verifyToken(code, env.JWT_ACCESS_SECRET);
-  } catch {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in code is invalid or expired');
-  }
-
-  if (tokenPayload.type !== 'oauth-exchange' || typeof tokenPayload.id !== 'string') {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in code is invalid');
-  }
-
-  const rawUser = await prisma.user.findUnique({
-    where: { id: tokenPayload.id },
-  });
-
-  if (!rawUser) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-  if (rawUser.status !== 'ACTIVE') {
-    throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
-  }
-
-  const user = rawUser;
-
-  const jwtPayload = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    status: user.status,
-    isSubscribed: user.isSubscribed,
-  };
-
-  const accessToken = jwtUtils.createToken(jwtPayload, env.JWT_ACCESS_SECRET, env.JWT_ACCESS_EXPIRES_IN);
-  const refreshToken = jwtUtils.createToken(jwtPayload, env.JWT_REFRESH_SECRET, env.JWT_REFRESH_EXPIRES_IN);
-
-  return {
-    accessToken,
-    refreshToken,
-  };
-};
-
 const getMe = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -375,8 +320,6 @@ export const authService = {
   verifyEmailAndCreateUser,
   resendVerificationOtp,
   refreshAuthTokens,
-  createGoogleLoginCode,
-  exchangeGoogleLoginCode,
   getMe,
   updateMe,
   changePassword,
