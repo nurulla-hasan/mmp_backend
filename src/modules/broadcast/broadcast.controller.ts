@@ -29,8 +29,10 @@ const getAllBroadcasts = catchAsync(async (req, res) => {
 
 // 3. Public/User: Get active broadcasts
 const getActiveBroadcasts = catchAsync(async (req, res) => {
-  const targetRole = req.user?.role;
-  const result = await broadcastService.getActiveBroadcasts(targetRole);
+  const result = await broadcastService.getActiveBroadcasts({
+    role: req.user?.role,
+    isSubscribed: req.user?.isSubscribed,
+  });
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -97,4 +99,3 @@ export const broadcastController = {
   toggleBroadcastStatus,
   deleteBroadcast,
 };
-
