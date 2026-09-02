@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { auth } from "../../middlewares/auth";
+import { auth, optionalAuth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { broadcastController } from "./broadcast.controller";
 import {
@@ -9,8 +9,9 @@ import {
 
 export const broadcastRouter = Router();
 
-// Public/User: Get active announcements
-broadcastRouter.get("/active", broadcastController.getActiveBroadcasts);
+// Public/User: Get active announcements. A valid session is optional and is
+// used only to include audience-targeted USER/SURVEYOR/PRO announcements.
+broadcastRouter.get("/active", optionalAuth, broadcastController.getActiveBroadcasts);
 
 // Admin: Get all announcements
 broadcastRouter.get("/", auth("ADMIN"), broadcastController.getAllBroadcasts);
@@ -47,4 +48,3 @@ broadcastRouter.delete(
   auth("ADMIN"),
   broadcastController.deleteBroadcast,
 );
-
