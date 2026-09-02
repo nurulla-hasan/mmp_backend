@@ -127,17 +127,26 @@ const getAllBroadcasts = async (query: GetBroadcastsQueryInput) => {
   };
 };
 
+type BroadcastViewer = {
+  role?: string;
+  isSubscribed?: boolean;
+};
+
 // 3. Get active broadcasts for public/users
-const getActiveBroadcasts = async (targetUserRole?: string) => {
+const getActiveBroadcasts = async (viewer: BroadcastViewer = {}) => {
   await seedDefaultBroadcastsIfEmpty();
 
   const now = new Date();
   const targetFilter: Prisma.BroadcastWhereInput[] = [{ target: "ALL" }];
 
-  if (targetUserRole === "SURVEYOR") {
+  if (viewer.role === "SURVEYOR") {
     targetFilter.push({ target: "SURVEYORS" });
-  } else if (targetUserRole === "USER") {
+  } else if (viewer.role === "USER") {
     targetFilter.push({ target: "USERS" });
+  }
+
+  if (viewer.isSubscribed) {
+    targetFilter.push({ target: "PRO_USERS" });
   }
 
   const broadcasts = await prisma.broadcast.findMany({
@@ -244,4 +253,3 @@ export const broadcastService = {
   toggleBroadcastStatus,
   deleteBroadcast,
 };
-
