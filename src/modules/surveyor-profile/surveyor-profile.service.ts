@@ -204,12 +204,43 @@ const getAllSurveyors = async (query: Record<string, unknown> = {}) => {
   }
 
   if (district) {
-    andConditions.push({
-      serviceAreas: {
-        some: {
-          district: { equals: district as string, mode: "insensitive" },
-        },
+    const districtQuery = (district as string).trim();
+    const foundDistrict = await prisma.district.findFirst({
+      where: {
+        OR: [
+          { slug: { equals: districtQuery, mode: "insensitive" } },
+          { name: { equals: districtQuery, mode: "insensitive" } },
+        ],
       },
+    });
+
+    const districtConditions: Prisma.StringFilter[] = [
+      { equals: districtQuery, mode: "insensitive" },
+    ];
+    if (foundDistrict) {
+      if (foundDistrict.name && foundDistrict.name.toLowerCase() !== districtQuery.toLowerCase()) {
+        districtConditions.push({ equals: foundDistrict.name, mode: "insensitive" });
+      }
+      if (foundDistrict.slug && foundDistrict.slug.toLowerCase() !== districtQuery.toLowerCase()) {
+        districtConditions.push({ equals: foundDistrict.slug, mode: "insensitive" });
+      }
+    }
+
+    andConditions.push({
+      OR: [
+        {
+          serviceAreas: {
+            some: {
+              OR: districtConditions.map((cond) => ({ district: cond })),
+            },
+          },
+        },
+        {
+          user: {
+            OR: districtConditions.map((cond) => ({ district: cond })),
+          },
+        },
+      ],
     });
   }
 
