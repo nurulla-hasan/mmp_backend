@@ -3,11 +3,15 @@ import { env } from "../../config/index";
 import { IAuthTokens } from "./auth.types";
 
 const isProduction = env.NODE_ENV === "production";
+const cookieDomain = isProduction
+  ? `.${new URL(env.FRONTEND_URL).hostname.replace(/^www\./, "")}`
+  : undefined;
 
 const baseCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
+  sameSite: "lax",
+  domain: cookieDomain,
   path: "/",
 };
 
@@ -27,4 +31,3 @@ export const clearAuthCookies = (res: Response): void => {
   res.clearCookie("accessToken", baseCookieOptions);
   res.clearCookie("refreshToken", baseCookieOptions);
 };
-
