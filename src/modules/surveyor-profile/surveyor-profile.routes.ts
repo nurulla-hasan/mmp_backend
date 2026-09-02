@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
+import { uploadDocument } from "../../lib/multer";
 import { surveyorProfileController } from "./surveyor-profile.controller";
 import {
   applyAsSurveyorSchema,
@@ -9,6 +10,20 @@ import {
 } from "./surveyor-profile.validation";
 
 export const surveyorProfileRouter = Router();
+
+// Certificate upload & cleanup
+surveyorProfileRouter.post(
+  "/certificate/upload",
+  auth("USER", "SURVEYOR"),
+  uploadDocument.single("certificate"),
+  surveyorProfileController.uploadCertificate,
+);
+
+surveyorProfileRouter.delete(
+  "/certificate/delete",
+  auth("USER", "SURVEYOR"),
+  surveyorProfileController.deleteCertificate,
+);
 
 // ── Admin Endpoints (ADMIN & SUPER_ADMIN) ──
 surveyorProfileRouter.get(

@@ -35,12 +35,42 @@ export const uploadToCloudinary = (
   });
 };
 
-export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
+export const uploadDocumentToCloudinary = (
+  buffer: Buffer,
+  folder = "mmp/certificates",
+): Promise<UploadApiResponse> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        {
+          folder,
+          resource_type: "auto",
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          if (!result) return reject(new Error("No result returned from Cloudinary."));
+          resolve(result);
+        },
+      )
+      .end(buffer);
+  });
+};
+
+export const deleteFromCloudinary = async (
+  publicId: string,
+  resourceType: "image" | "raw" | "auto" = "image",
+): Promise<void> => {
   if (!publicId) return;
   try {
-    await cloudinary.uploader.destroy(publicId);
+    const res = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType as "image" | "raw",
+    });
+    if (res.result !== "ok" && resourceType === "image") {
+      await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
+    }
   } catch (error) {
-    console.error("Failed to delete old image from Cloudinary:", error);
+    console.error("Failed to delete asset from Cloudinary:", error);
   }
 };
+
 

@@ -8,6 +8,10 @@ import type {
   VerifySurveyorInput,
 } from "./surveyor-profile.validation";
 import { Prisma } from "../../../generated/prisma/client";
+import {
+  uploadDocumentToCloudinary,
+  deleteFromCloudinary,
+} from "../../lib/cloudinary";
 
 const profileInclude = {
   surveyorServices: { include: { service: true } },
@@ -496,6 +500,31 @@ const getVerificationRequestById = async (id: string) => {
   return profile;
 };
 
+// Upload surveyor certificate document (PDF or Image)
+const uploadCertificate = async (userId: string, fileBuffer: Buffer) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  const cloudinaryResult = await uploadDocumentToCloudinary(
+    fileBuffer,
+    "mmp/certificates",
+  );
+
+  return {
+    url: cloudinaryResult.secure_url,
+    publicId: cloudinaryResult.public_id,
+    format: cloudinaryResult.format,
+  };
+};
+
+// Delete certificate from Cloudinary (e.g. on rollback or removal)
+const deleteCertificate = async (publicId: string) => {
+  await deleteFromCloudinary(publicId, "auto");
+  return true;
+};
+
 export const surveyorProfileService = {
   getAllSurveyors,
   getSurveyorBySlug,
@@ -505,4 +534,7 @@ export const surveyorProfileService = {
   verifySurveyor,
   getVerificationRequests,
   getVerificationRequestById,
+  uploadCertificate,
+  deleteCertificate,
 };
+

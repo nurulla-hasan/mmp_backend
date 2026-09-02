@@ -1,3 +1,5 @@
+import httpStatus from "http-status";
+import { AppError } from "../../utils/app-error";
 import { catchAsync } from "../../utils/catch-async";
 import { sendResponse } from "../../utils/send-response";
 import { surveyorProfileService } from "./surveyor-profile.service";
@@ -101,6 +103,47 @@ const getVerificationRequestById = catchAsync(async (req, res) => {
   });
 });
 
+// Upload certificate document (PDF / Image)
+const uploadCertificate = catchAsync(async (req, res) => {
+  if (!req.file) {
+    throw new AppError(httpStatus.BAD_REQUEST, "No certificate file provided.");
+  }
+
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized.");
+  }
+
+  const result = await surveyorProfileService.uploadCertificate(
+    userId,
+    req.file.buffer,
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Certificate uploaded successfully.",
+    data: result,
+  });
+});
+
+// Delete certificate document (rollback / cleanup)
+const deleteCertificate = catchAsync(async (req, res) => {
+  const { publicId } = req.body;
+  if (!publicId) {
+    throw new AppError(httpStatus.BAD_REQUEST, "publicId is required.");
+  }
+
+  await surveyorProfileService.deleteCertificate(publicId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Certificate removed successfully.",
+    data: null,
+  });
+});
+
 export const surveyorProfileController = {
   getAllSurveyors,
   getSurveyorBySlug,
@@ -110,4 +153,7 @@ export const surveyorProfileController = {
   verifySurveyor,
   getVerificationRequests,
   getVerificationRequestById,
+  uploadCertificate,
+  deleteCertificate,
 };
+
