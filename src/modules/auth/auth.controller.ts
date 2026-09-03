@@ -11,7 +11,6 @@ import { catchAsync } from '../../utils/catch-async';
 import { sendResponse } from '../../utils/send-response';
 
 import { authService } from './auth.service';
-import { clearAuthCookies, setAuthCookies } from './auth.utils';
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(
@@ -42,7 +41,6 @@ const loginUser = catchAsync(async (req, res) => {
   }
 
   const result = authService.loginUser(req.user as unknown as User);
-  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
@@ -66,7 +64,6 @@ const registerUser = catchAsync(async (req, res) => {
 const verifyEmail = catchAsync(async (req, res) => {
   const { email, otp } = req.body;
   const result = await authService.verifyEmailAndCreateUser(email, otp);
-  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
@@ -96,7 +93,6 @@ const refreshAuthTokens = catchAsync(async (req, res) => {
   }
 
   const result = await authService.refreshAuthTokens(refreshToken);
-  setAuthCookies(res, result);
 
   sendResponse(res, {
     success: true,
@@ -152,9 +148,11 @@ const googleLoginCallback: RequestHandler = (req, res) => {
 
   const result = authService.loginUser(req.user as unknown as User);
 
-  setAuthCookies(res, result);
+  const redirectUrl = new URL('/auth/success', env.FRONTEND_URL);
+  redirectUrl.searchParams.set('accessToken', result.accessToken);
+  redirectUrl.searchParams.set('refreshToken', result.refreshToken);
 
-  res.redirect(new URL('/auth/success', env.FRONTEND_URL).toString());
+  res.redirect(redirectUrl.toString());
 };
 
 
@@ -172,8 +170,6 @@ const getMe: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const logoutUser: RequestHandler = (_req, res) => {
-  clearAuthCookies(res);
-
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
