@@ -2,22 +2,50 @@ import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/app-error";
 import httpStatus from "http-status";
 
+export type UpazilaItem = {
+  id: string;
+  name: string;
+  slug: string;
+  districtId: string;
+};
+
 export type DistrictResponse = {
+  id: string;
+  name: string;
+  slug: string;
   value: string;
   label: string;
   upazilas: string[];
+  upazilaList: UpazilaItem[];
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 const getAllDistricts = async (): Promise<DistrictResponse[]> => {
   const districts = await prisma.district.findMany({
-    include: { upazilas: true },
+    include: {
+      upazilas: {
+        orderBy: { name: "asc" },
+      },
+    },
     orderBy: { name: "asc" },
   });
 
   return districts.map((d) => ({
+    id: d.id,
+    name: d.name,
+    slug: d.slug,
     value: d.slug,
     label: d.name,
     upazilas: d.upazilas.map((u) => u.name),
+    upazilaList: d.upazilas.map((u) => ({
+      id: u.id,
+      name: u.name,
+      slug: u.slug,
+      districtId: u.districtId,
+    })),
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
   }));
 };
 
