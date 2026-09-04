@@ -18,6 +18,7 @@ const envSchema = z
       .default('postgresql://postgres:postgres@localhost:5432/mmp?schema=public'),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
     FRONTEND_URL: z.url().default('http://localhost:3000'),
+    MOBILE_APP_REDIRECT_URL: z.string().min(1).default('mouzamappro://oauth'),
     TRUST_PROXY: booleanString,
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
