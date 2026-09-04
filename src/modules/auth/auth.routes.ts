@@ -1,6 +1,4 @@
 import { Router } from "express";
-import { env } from "../../config/index";
-import { passport } from "../../config/passport";
 import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { authController } from "./auth.controller";
@@ -99,9 +97,6 @@ authRouter.post(
 authRouter.get(
   "/google/callback",
   authController.verifyGoogleLoginState,
-  passport.authenticate("google", {
-    failureRedirect: `${env.API_PREFIX}/auth/google/failure`,
-    session: false,
-  }),
+  authController.authenticateGoogleCallback,
   authController.googleLoginCallback,
 );
