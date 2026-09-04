@@ -1,6 +1,4 @@
 import { Router } from "express";
-import { env } from "../../config/index";
-import { passport } from "../../config/passport";
 import { auth } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { authController } from "./auth.controller";
@@ -8,6 +6,7 @@ import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
+  mobileGoogleExchangeSchema,
   refreshSchema,
   registerSchema,
   resendOtpSchema,
@@ -87,12 +86,17 @@ authRouter.post(
 
 authRouter.get("/google", authController.startGoogleLogin);
 
+authRouter.get("/google/failure", authController.googleLoginFailure);
+
+authRouter.post(
+  "/google/mobile-exchange",
+  validate(mobileGoogleExchangeSchema),
+  authController.exchangeMobileGoogleAuthCode,
+);
+
 authRouter.get(
   "/google/callback",
   authController.verifyGoogleLoginState,
-  passport.authenticate("google", {
-    failureRedirect: `${env.FRONTEND_URL}/login?error=google_auth_failed`,
-    session: false,
-  }),
+  authController.authenticateGoogleCallback,
   authController.googleLoginCallback,
 );

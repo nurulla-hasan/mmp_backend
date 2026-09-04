@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import httpStatus from 'http-status';
 import type { User } from '../../../generated/prisma/client';
 
@@ -11,6 +11,41 @@ import { catchAsync } from '../../utils/catch-async';
 import { sendResponse } from '../../utils/send-response';
 
 import { authService } from './auth.service';
+
+const GOOGLE_AUTH_COOKIE_PATH = `${env.API_PREFIX}/auth/google`;
+const MOBILE_CODE_CHALLENGE_REGEX = /^[a-f0-9]{64}$/;
+
+type GoogleOAuthClient = 'web' | 'mobile';
+
+const getGoogleOAuthClient = (req: Request): GoogleOAuthClient =>
+  req.cookies?.oauthClient === 'mobile' ? 'mobile' : 'web';
+
+const clearGoogleOAuthCookies = (res: Response) => {
+  const cookieOptions = { path: GOOGLE_AUTH_COOKIE_PATH };
+  res.clearCookie('oauthState', cookieOptions);
+  res.clearCookie('oauthClient', cookieOptions);
+  res.clearCookie('oauthCodeChallenge', cookieOptions);
+};
+
+const getMobileRedirectUrl = (params: Record<string, string>) => {
+  const redirectUrl = new URL(env.MOBILE_APP_REDIRECT_URL);
+  for (const [key, value] of Object.entries(params)) {
+    redirectUrl.searchParams.set(key, value);
+  }
+  return redirectUrl.toString();
+};
+
+const redirectGoogleFailure = (req: Request, res: Response) => {
+  const client = getGoogleOAuthClient(req);
+  clearGoogleOAuthCookies(res);
+
+  if (client === 'mobile') {
+    res.redirect(getMobileRedirectUrl({ error: 'google_auth_failed' }));
+    return;
+  }
+
+  res.redirect(`${env.FRONTEND_URL}/login?error=google_auth_failed`);
+};
 
 const loginUserWithPassport: RequestHandler = (req, res, next) => {
   passport.authenticate(
@@ -109,15 +144,29 @@ const startGoogleLogin: RequestHandler = (req, res, next) => {
     );
   }
 
-  const state = randomUUID();
+  const client: GoogleOAuthClient = req.query.client === 'mobile' ? 'mobile' : 'web';
+  const codeChallenge =
+    typeof req.query.codeChallenge === 'string' ? req.query.codeChallenge.toLowerCase() : '';
 
-  res.cookie('oauthState', state, {
+  if (client === 'mobile' && !MOBILE_CODE_CHALLENGE_REGEX.test(codeChallenge)) {
+    return next(new AppError(httpStatus.BAD_REQUEST, 'Mobile Google sign-in challenge is invalid'));
+  }
+
+  const state = randomUUID();
+  const cookieOptions = {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     maxAge: 10 * 60 * 1000,
-    path: `${env.API_PREFIX}/auth/google/callback`,
-  });
+    path: GOOGLE_AUTH_COOKIE_PATH,
+  };
+
+  res.cookie('oauthState', state, cookieOptions);
+  res.cookie('oauthClient', client, cookieOptions);
+
+  if (client === 'mobile') {
+    res.cookie('oauthCodeChallenge', codeChallenge, cookieOptions);
+  }
 
   passport.authenticate('google', {
     scope: ['profile', 'email'],
@@ -131,30 +180,86 @@ const verifyGoogleLoginState: RequestHandler = (req, res, next) => {
   const stateFromCookie = req.cookies?.oauthState;
 
   res.clearCookie('oauthState', {
-    path: `${env.API_PREFIX}/auth/google/callback`,
+    path: GOOGLE_AUTH_COOKIE_PATH,
   });
 
   if (!stateFromGoogle || !stateFromCookie || stateFromGoogle !== stateFromCookie) {
-    return next(new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in state is invalid'));
+    redirectGoogleFailure(req, res);
+    return;
   }
 
   next();
 };
 
-const googleLoginCallback: RequestHandler = (req, res) => {
+const authenticateGoogleCallback: RequestHandler = (req, res, next) => {
+  passport.authenticate(
+    'google',
+    { session: false },
+    (
+      error: unknown,
+      user: Express.User | false | null | undefined,
+    ) => {
+      if (error || !user) {
+        redirectGoogleFailure(req, res);
+        return;
+      }
+
+      req.user = user;
+      next();
+    },
+  )(req, res, next);
+};
+
+const googleLoginFailure: RequestHandler = (req, res) => {
+  redirectGoogleFailure(req, res);
+};
+
+const googleLoginCallback = catchAsync(async (req, res) => {
   if (!req.user) {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Google login failed');
+    redirectGoogleFailure(req, res);
+    return;
   }
 
-  const result = authService.loginUser(req.user as unknown as User);
+  const user = req.user as unknown as User;
+  const client = getGoogleOAuthClient(req);
+
+  if (client === 'mobile') {
+    const codeChallenge = req.cookies?.oauthCodeChallenge;
+
+    if (
+      typeof codeChallenge !== 'string' ||
+      !MOBILE_CODE_CHALLENGE_REGEX.test(codeChallenge)
+    ) {
+      redirectGoogleFailure(req, res);
+      return;
+    }
+
+    const code = await authService.createMobileGoogleAuthCode(user, codeChallenge);
+    clearGoogleOAuthCookies(res);
+    res.redirect(getMobileRedirectUrl({ code }));
+    return;
+  }
+
+  const result = authService.loginUser(user);
+  clearGoogleOAuthCookies(res);
 
   const redirectUrl = new URL('/auth/success', env.FRONTEND_URL);
   redirectUrl.searchParams.set('accessToken', result.accessToken);
   redirectUrl.searchParams.set('refreshToken', result.refreshToken);
 
   res.redirect(redirectUrl.toString());
-};
+});
 
+const exchangeMobileGoogleAuthCode = catchAsync(async (req, res) => {
+  const result = await authService.exchangeMobileGoogleAuthCode(req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Google login successful',
+    data: result,
+  });
+});
 
 const getMe: RequestHandler = catchAsync(async (req, res) => {
   const user = await authService.getMe(req.user?.id as string);
@@ -242,7 +347,10 @@ export const authController = {
   refreshAuthTokens,
   startGoogleLogin,
   verifyGoogleLoginState,
+  authenticateGoogleCallback,
+  googleLoginFailure,
   googleLoginCallback,
+  exchangeMobileGoogleAuthCode,
   getMe,
   updateMe,
   changePassword,

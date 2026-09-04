@@ -24,6 +24,11 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1).optional(),
 });
 
+export const mobileGoogleExchangeSchema = z.object({
+  code: z.uuid(),
+  codeVerifier: z.string().min(32).max(256),
+});
+
 const bdPhoneRegex = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 export const updateMeSchema = z.object({
@@ -90,3 +95,4 @@ export type UpdateMeInput = z.infer<typeof updateMeSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type MobileGoogleExchangeInput = z.infer<typeof mobileGoogleExchangeSchema>;
