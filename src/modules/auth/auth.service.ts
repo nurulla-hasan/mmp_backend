@@ -1,3 +1,4 @@
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import httpStatus from 'http-status';
 import type { JwtPayload } from 'jsonwebtoken';
@@ -6,6 +7,7 @@ import { AuthProvider, type User } from '../../../generated/prisma/client';
 import { env } from '../../config/index';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../../lib/email';
 import { prisma } from '../../lib/prisma';
+import { deleteCache, getCache, setCache } from '../../lib/redis';
 import { AppError } from '../../utils/app-error';
 import { jwtUtils } from '../../utils/jwt';
 
@@ -15,9 +17,18 @@ import type {
   ChangePasswordInput,
   ForgotPasswordInput,
   ResetPasswordInput,
+  MobileGoogleExchangeInput,
 } from './auth.validation';
 import { otpService } from './otp.service';
 import { planService } from '../plan/plan.service';
+
+const MOBILE_GOOGLE_AUTH_CODE_PREFIX = 'auth:google:mobile:';
+const MOBILE_GOOGLE_AUTH_CODE_TTL_SECONDS = 120;
+
+type MobileGoogleAuthCodePayload = {
+  userId: string;
+  codeChallenge: string;
+};
 
 const loginUser = (user: User) => {
   const jwtPayload = {
@@ -36,6 +47,59 @@ const loginUser = (user: User) => {
     accessToken,
     refreshToken,
   };
+};
+
+const createMobileGoogleAuthCode = async (user: User, codeChallenge: string) => {
+  const code = randomUUID();
+
+  await setCache<MobileGoogleAuthCodePayload>(
+    `${MOBILE_GOOGLE_AUTH_CODE_PREFIX}${code}`,
+    { userId: user.id, codeChallenge },
+    MOBILE_GOOGLE_AUTH_CODE_TTL_SECONDS,
+  );
+
+  return code;
+};
+
+const exchangeMobileGoogleAuthCode = async (payload: MobileGoogleExchangeInput) => {
+  const cacheKey = `${MOBILE_GOOGLE_AUTH_CODE_PREFIX}${payload.code}`;
+  const pendingAuth = await getCache<MobileGoogleAuthCodePayload>(cacheKey);
+
+  if (!pendingAuth) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in code is invalid or expired');
+  }
+
+  // A mobile OAuth code is single-use. Delete it before verifier validation so
+  // a failed replay/brute-force attempt cannot keep probing the same code.
+  await deleteCache(cacheKey);
+
+  const actualChallenge = createHash('sha256').update(payload.codeVerifier).digest('hex');
+  const expectedBuffer = Buffer.from(pendingAuth.codeChallenge, 'hex');
+  const actualBuffer = Buffer.from(actualChallenge, 'hex');
+  const challengeMatches =
+    expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
+
+  if (!challengeMatches) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Google sign-in verification failed');
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: pendingAuth.userId },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  if (user.status !== 'ACTIVE') {
+    throw new AppError(httpStatus.FORBIDDEN, 'Your account is unavailable');
+  }
+
+  if (!user.emailVerified) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Your email is not verified');
+  }
+
+  return loginUser(user);
 };
 
 const registerUser = async (payload: IRegisterUser): Promise<{ email: string }> => {
@@ -321,6 +385,8 @@ const resetPassword = async (payload: ResetPasswordInput) => {
 
 export const authService = {
   loginUser,
+  createMobileGoogleAuthCode,
+  exchangeMobileGoogleAuthCode,
   registerUser,
   verifyEmailAndCreateUser,
   resendVerificationOtp,
