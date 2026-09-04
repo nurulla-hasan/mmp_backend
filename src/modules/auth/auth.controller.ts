@@ -191,6 +191,25 @@ const verifyGoogleLoginState: RequestHandler = (req, res, next) => {
   next();
 };
 
+const authenticateGoogleCallback: RequestHandler = (req, res, next) => {
+  passport.authenticate(
+    'google',
+    { session: false },
+    (
+      error: unknown,
+      user: Express.User | false | null | undefined,
+    ) => {
+      if (error || !user) {
+        redirectGoogleFailure(req, res);
+        return;
+      }
+
+      req.user = user;
+      next();
+    },
+  )(req, res, next);
+};
+
 const googleLoginFailure: RequestHandler = (req, res) => {
   redirectGoogleFailure(req, res);
 };
@@ -328,6 +347,7 @@ export const authController = {
   refreshAuthTokens,
   startGoogleLogin,
   verifyGoogleLoginState,
+  authenticateGoogleCallback,
   googleLoginFailure,
   googleLoginCallback,
   exchangeMobileGoogleAuthCode,
